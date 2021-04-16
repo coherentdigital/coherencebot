@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+-->
+<plugin
+    id="text-summarizer"
+    name="Produces a summary for any document with full text that does not already have a summary"
+    version="0.0.1"
+    provider-name="coherentdigital.net">
+
+    <runtime>
+        <library name="text-summarizer.jar">
+            <export name="*"/>
+        </library>
+    </runtime>
+
+    <requires>
+        <import plugin="nutch-extensionpoints"/>
+    </requires>
+
+    <extension id="org.apache.nutch.indexer.summary.TextSummarizer"
+               name="Text Summarizer"
+               point="org.apache.nutch.indexer.IndexingFilter">
+        <implementation id="org.apache.nutch.indexer.summary.TextSummarizer"
+                        class="org.apache.nutch.indexer.summary.TextSummarizer"/>
+    </extension>
+
+</plugin>
