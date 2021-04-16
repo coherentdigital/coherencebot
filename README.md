@@ -1,6 +1,22 @@
-Apache Nutch README
+CoherenceBot README
 ===================
 
+CoherenceBot is a fork of Apache Nutch.  It was forked on 16 April 2021 corresponding to Apache Nutch 1.19.
+Having a local fork allows us to commit changes rapidly (without review by the Nutch community)
+and also allowing our modifications to be CoherenceBot-specific.
+
+Custom Plugins in our fork include:
+
+1. index-criteria - a plugin to remove unwanted docs from the downstream index.
+2. index-org - a plugin which obtains organization metadata for including in the index.
+3. parse-heading - a plugin for generating a title from PDF fonts on page 1.
+4. parse-thumb - a plugin to generate a thumbnail using the thum.io web service.
+5. parse-translate - a plugin that translates non-English titles using AWS Translate.
+6. language-identifier - an existing plugin modifified to use AWS Comprehend to detect language.
+7. text-summarizer - a plugin to generate a summary from parsed text.
+
+Apache Nutch
+============
 <img src="https://nutch.apache.org/assets/img/nutch_logo_tm.png" align="right" width="300" />
 
 For the latest information about Nutch, please visit our website at:
