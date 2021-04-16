@@ -19,6 +19,7 @@ package org.apache.nutch.analysis.lang;
 import java.lang.invoke.MethodHandles;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
@@ -39,16 +40,30 @@ import org.w3c.dom.Element;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
+import com.amazonaws.auth.AWSStaticCredentialsProvider;
+import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
+import com.amazonaws.regions.Regions;
+import com.amazonaws.services.comprehend.AmazonComprehend;
+import com.amazonaws.services.comprehend.AmazonComprehendClientBuilder;
+import com.amazonaws.services.comprehend.model.DetectDominantLanguageRequest;
+import com.amazonaws.services.comprehend.model.DetectDominantLanguageResult;
+import com.amazonaws.services.comprehend.model.DominantLanguage;
+
 public class HTMLLanguageParser implements HtmlParseFilter {
 
   private static final Logger LOG = LoggerFactory
       .getLogger(MethodHandles.lookup().lookupClass());
 
-  private int detect = -1, identify = -1;
+  private int detect = -1, identify = -1, comprehend = -1;
 
   private int contentMaxlength = -1;
 
   private boolean onlyCertain = false;
+
+  private String awsAccessKeyId = null;
+  private String awsSecretAccessKey = null;
+  private String awsRegionString = null;
 
   /* A static Map of ISO-639 language codes */
   private static Map<String, String> LANGUAGES_MAP = new HashMap<String, String>();
@@ -113,6 +128,8 @@ public class HTMLLanguageParser implements HtmlParseFilter {
     if (lang != null) {
       parse.getData().getParseMeta().set(Metadata.LANGUAGE, lang);
       return parseResult;
+    } else {
+      LOG.warn("Unable to detect language");
     }
 
     return parseResult;
@@ -135,7 +152,7 @@ public class HTMLLanguageParser implements HtmlParseFilter {
     return lang;
   }
 
-  /** Use statistical language identification to extract page language */
+  /** Use Tika statistical language identification or AWS Comprehend to extract page language */
   private String identifyLanguage(Parse parse) {
     StringBuilder text = new StringBuilder();
     if (parse == null)
@@ -161,10 +178,13 @@ public class HTMLLanguageParser implements HtmlParseFilter {
     LanguageIdentifier identifier = new LanguageIdentifier(titleandcontent);
 
     if (onlyCertain) {
-      if (identifier.isReasonablyCertain())
+      if (identifier.isReasonablyCertain()) {
         return identifier.getLanguage();
-      else
+      } else if (comprehend >= 0) {
+        return comprehendLanguage(titleandcontent);
+      } else {
         return null;
+      }
     }
     return identifier.getLanguage();
   }
@@ -300,6 +320,47 @@ public class HTMLLanguageParser implements HtmlParseFilter {
 
   }
 
+  /**
+   * Detect language using AWS Comprehend.
+   * Returns 2-letter language code if AWS comprehend confidence is 90% or higher.
+   */
+  private String comprehendLanguage(String text) {
+    try {
+      // Call AWS Comprehend detectDominantLanguage API
+      BasicAWSCredentials awsCreds =
+        new BasicAWSCredentials(awsAccessKeyId, awsSecretAccessKey);
+
+      AmazonComprehend comprehendClient =
+        AmazonComprehendClientBuilder.standard()
+          .withCredentials(new AWSStaticCredentialsProvider(awsCreds))
+          .withRegion(Regions.fromName(awsRegionString))
+          .build();
+
+      DetectDominantLanguageRequest detectDominantLanguageRequest = 
+        new DetectDominantLanguageRequest().withText(text);
+      DetectDominantLanguageResult detectDominantLanguageResult = 
+        comprehendClient.detectDominantLanguage(detectDominantLanguageRequest);
+      List<DominantLanguage> langs = detectDominantLanguageResult.getLanguages();
+      for (int i = 0; i < langs.size(); i++ ) {
+        DominantLanguage dl = langs.get(i);
+        Float score = dl.getScore();
+        String language = dl.getLanguageCode();
+        if (score >= 0.9f) {
+          if (language.length() > 0) {
+	    String[] langParts = language.split("-");
+            return langParts[0];
+          }
+        } else {
+          LOG.warn("Language " + language + " scored " + score);
+	}
+     }
+    } catch (Exception e) {
+      LOG.error("Unable to detect language using AWS Comprehend: " + e.getMessage());
+    }
+
+    return null;
+  }
+
   public void setConf(Configuration conf) {
     this.conf = conf;
     contentMaxlength = conf.getInt("lang.analyze.max.length", -1);
@@ -310,6 +371,29 @@ public class HTMLLanguageParser implements HtmlParseFilter {
         detect = i;
       } else if (policy[i].equals("identify")) {
         identify = i;
+      } else if (policy[i].equals("comprehend")) {
+        comprehend = i;
+      }
+    }
+
+    if (comprehend >= 0) {
+      awsRegionString = conf.getTrimmed("lang.comprehend.awsregion");
+      // Check that the config has the credentials.
+      String credentials = conf.getTrimmed("lang.comprehend.credentials");
+      if (credentials == null) {
+        String message = "Set AWS_ACCESS_KEY_ID:AWS_SECRET_ACCESS_KEY in config element lang.comprehend.credentials. " +
+          " This allows using AWS Comprehend to detect language when Tika cannot.";
+        LOG.error(message);
+      } else {
+        String[] credParts = credentials.split(":",2);
+        if (credParts.length != 2) {
+          String message = "Set AWS_ACCESS_KEY_ID:AWS_SECRET_ACCESS_KEY in config element lang.comprehend.credentials. " +
+            " This allows using AWS Comprehend to detect language when Tika cannot.";
+          LOG.error(message);
+        } else {
+          awsAccessKeyId = credParts[0];
+          awsSecretAccessKey = credParts[1];
+        }
       }
     }
   }

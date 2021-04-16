@@ -16,6 +16,9 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 -->
+  <!-- On EC2 machines the root volume is small, it helps to relocate the ivy cache to save space on root -->
+  <!-- caches defaultCacheDir="/mnt/pdc/ivy/cache" /-->
+
   <property name="oss.sonatype.org" 
     value="https://oss.sonatype.org/content/repositories/releases/" 
     override="false"/>

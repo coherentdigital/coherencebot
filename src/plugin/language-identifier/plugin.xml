@@ -25,6 +25,9 @@
       <library name="language-identifier.jar">
          <export name="*"/>
       </library>
+      <!-- dependent upon aws-comprehend -->
+      <library name="aws-java-sdk-core-1.11.954.jar"/>
+      <library name="aws-java-sdk-comprehend-1.11.954.jar"/>
    </runtime>
 
    <requires>

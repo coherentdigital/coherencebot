@@ -18,13 +18,21 @@ package org.apache.nutch.analysis.lang;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 
 // Nutch imports
+import org.apache.hadoop.conf.Configuration;
 import org.apache.nutch.metadata.Metadata;
 import org.apache.nutch.parse.Parse;
+import org.apache.nutch.parse.ParseResult;
+import org.apache.nutch.parse.ParseStatus;
 import org.apache.nutch.parse.ParseUtil;
+import org.apache.nutch.parse.HTMLMetaTags;
+import org.apache.nutch.parse.HtmlParseFilter;
 import org.apache.nutch.protocol.Content;
 import org.apache.nutch.util.NutchConfiguration;
+import org.w3c.dom.DocumentFragment;
+import org.apache.html.dom.HTMLDocumentImpl;
 import org.apache.tika.language.LanguageIdentifier;
 import org.junit.Assert;
 import org.junit.Test;
@@ -115,7 +123,7 @@ public class TestHTMLLanguageParser {
           StringBuilder content = new StringBuilder();
           // Test each line of the file...
           BufferedReader testFile = new BufferedReader(new InputStreamReader(
-              this.getClass().getResourceAsStream(tokens[0]), "UTF-8"));
+              this.getClass().getResourceAsStream(tokens[0]), StandardCharsets.UTF_8));
           String testLine = null, lang = null;
           while ((testLine = testFile.readLine()) != null) {
             content.append(testLine + "\n");
@@ -143,6 +151,52 @@ public class TestHTMLLanguageParser {
     } catch (Exception e) {
       e.printStackTrace();
       Assert.fail(e.toString());
+    }
+  }
+
+  @Test
+  public void testAwsComprehend() {
+    StringBuilder sb = new StringBuilder();
+    try {
+      BufferedReader in = new BufferedReader(new InputStreamReader(this
+          .getClass().getResourceAsStream("es.test"), StandardCharsets.UTF_8));
+      String line = null;
+      while ((line = in.readLine()) != null) {
+        sb.append(line);
+	sb.append("\n");
+      }
+      in.close();
+
+      Configuration conf = NutchConfiguration.create();
+      conf.setStrings("lang.extraction.policy", "identify,comprehend");
+      conf.setStrings("lang.comprehend.credentials","AKIA23B6R4NTDV2KFE65:s6E9FZAVypzEPhdhTtuDR9fektfASVl59UbwqxOF");
+      conf.setStrings("lang.comprehend.awsregion", "us-east-2");
+      conf.setInt("lang.analyze.max.length", 2048);
+      conf.setBoolean("lang.identification.only.certain", true);
+
+      String url = "https://language-identification-test.pdf";
+      Metadata meta = new Metadata();
+      meta.add("Content-Type", "text/html");
+
+      Content content = new Content(url, url,
+          sb.toString().getBytes(StandardCharsets.UTF_8), "text/html; charset=UTF-8", meta, conf);
+      ParseUtil parser = new ParseUtil(conf);
+      Parse parse = parser.parse(content).get(content.getUrl());
+
+      Assert.assertNotNull(
+        "The parseData must exist in the parse",
+        parse.getData());
+      Assert.assertNotNull(
+        "The parseMata must exist in the parseData",
+        parse.getData().getParseMeta());
+      String lang = (String) parse.getData().getParseMeta().get(Metadata.LANGUAGE);
+      Assert.assertNotNull(
+        "The parseMata must contain a lang", lang);
+      Assert.assertTrue(
+        "The lang must be es",
+        lang.equals("es"));
+    } catch (Exception e) {
+      Assert.fail("Exception" + e.toString());
     }
   }
 

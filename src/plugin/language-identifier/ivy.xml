@@ -36,6 +36,8 @@
   </publications>
 
   <dependencies>
+    <dependency org="com.amazonaws" name="aws-java-sdk-comprehend" rev="1.11.954"/>
+    <dependency org="com.amazonaws" name="aws-java-sdk-core" rev="1.11.954"/>
   </dependencies>
   
 </ivy-module>

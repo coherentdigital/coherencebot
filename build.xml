@@ -223,10 +223,12 @@
       <packageset dir="${plugins.dir}/microformats-reltag/src/java"/>
       <packageset dir="${plugins.dir}/mimetype-filter/src/java"/>
       <packageset dir="${plugins.dir}/parse-ext/src/java"/>
+      <packageset dir="${plugins.dir}/parse-headings/src/java"/>
       <packageset dir="${plugins.dir}/parse-html/src/java"/>
       <packageset dir="${plugins.dir}/parse-js/src/java"/>
       <packageset dir="${plugins.dir}/parse-metatags/src/java"/>
       <packageset dir="${plugins.dir}/parse-swf/src/java"/>
+      <packageset dir="${plugins.dir}/parse-thumb/src/java"/>
       <packageset dir="${plugins.dir}/parse-tika/src/java"/>
       <packageset dir="${plugins.dir}/parse-zip/src/java"/>
       <packageset dir="${plugins.dir}/parsefilter-debug/src/java"/>
@@ -248,6 +250,7 @@
       <packageset dir="${plugins.dir}/scoring-similarity/src/java"/>
       <packageset dir="${plugins.dir}/scoring-metadata/src/java"/>
       <packageset dir="${plugins.dir}/subcollection/src/java"/>
+      <packageset dir="${plugins.dir}/text-summarizer/src/java"/>
       <packageset dir="${plugins.dir}/tld/src/java"/>
       <packageset dir="${plugins.dir}/urlfilter-automaton/src/java"/>
       <packageset dir="${plugins.dir}/urlfilter-domain/src/java"/>
@@ -756,10 +759,12 @@
       <packageset dir="${plugins.dir}/microformats-reltag/src/java"/>
       <packageset dir="${plugins.dir}/mimetype-filter/src/java"/>
       <packageset dir="${plugins.dir}/parse-ext/src/java"/>
+      <packageset dir="${plugins.dir}/parse-headings/src/java"/>
       <packageset dir="${plugins.dir}/parse-html/src/java"/>
       <packageset dir="${plugins.dir}/parse-js/src/java"/>
       <packageset dir="${plugins.dir}/parse-metatags/src/java"/>
       <packageset dir="${plugins.dir}/parse-swf/src/java"/>
+      <packageset dir="${plugins.dir}/parse-thumb/src/java"/>
       <packageset dir="${plugins.dir}/parse-tika/src/java"/>
       <packageset dir="${plugins.dir}/parse-zip/src/java"/>
       <packageset dir="${plugins.dir}/parsefilter-debug/src/java"/>
@@ -781,6 +786,7 @@
       <packageset dir="${plugins.dir}/scoring-similarity/src/java"/>
       <packageset dir="${plugins.dir}/scoring-metadata/src/java"/>
       <packageset dir="${plugins.dir}/subcollection/src/java"/>
+      <packageset dir="${plugins.dir}/text-summarizer/src/java"/>
       <packageset dir="${plugins.dir}/tld/src/java"/>
       <packageset dir="${plugins.dir}/urlfilter-automaton/src/java"/>
       <packageset dir="${plugins.dir}/urlfilter-domain/src/java"/>
@@ -1253,6 +1259,8 @@
         <source path="${plugins.dir}/mimetype-filter/src/test/" />
         <source path="${plugins.dir}/parse-ext/src/java/" />
         <source path="${plugins.dir}/parse-ext/src/test/" />
+        <source path="${plugins.dir}/parse-headings/src/java/" />
+        <source path="${plugins.dir}/parse-headings/src/test/" />
         <source path="${plugins.dir}/parse-html/src/java/" />
         <source path="${plugins.dir}/parse-html/src/test/" />
         <source path="${plugins.dir}/parse-js/src/java/" />
@@ -1261,6 +1269,8 @@
         <source path="${plugins.dir}/parse-metatags/src/test/" />
         <source path="${plugins.dir}/parse-swf/src/java/" />
         <source path="${plugins.dir}/parse-swf/src/test/" />
+        <source path="${plugins.dir}/parse-thumb/src/java/" />
+        <source path="${plugins.dir}/parse-thumb/src/test/" />
         <source path="${plugins.dir}/parse-tika/src/java/" />
         <source path="${plugins.dir}/parse-tika/src/test/" />
         <source path="${plugins.dir}/parse-zip/src/java/" />
@@ -1292,6 +1302,8 @@
         <source path="${plugins.dir}/scoring-metadata/src/test" />
         <source path="${plugins.dir}/subcollection/src/java/" />
         <source path="${plugins.dir}/subcollection/src/test/" />
+        <source path="${plugins.dir}/text-summarizer/src/java/" />
+        <source path="${plugins.dir}/text-summarizer/src/test/" />
         <source path="${plugins.dir}/tld/src/java/" />
         <source path="${plugins.dir}/urlfilter-automaton/src/java/" />
         <source path="${plugins.dir}/urlfilter-automaton/src/test/" />

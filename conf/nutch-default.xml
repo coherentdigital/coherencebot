@@ -1445,21 +1445,6 @@
   </description>
 </property>
 
-<property>
-  <name>urlnormalizer.protocols.file</name>
-  <value>protocols.txt</value>
-  <description>urlnormalizer-protocol configuration file</description>
-</property>
-
-<property>
-  <name>urlnormalizer.protocols.rules</name>
-  <value></value>
-  <description>urlnormalizer-protocol rule definitions: if not empty,
-  takes precedence over rules defined in the rule file (see
-  urlnormalizer.protocols.file)</description>
-</property>
-
-
 <!-- mime properties -->
 
 <!--
@@ -1501,7 +1486,7 @@
 
 <property>
   <name>plugin.includes</name>
-  <value>protocol-http|urlfilter-(regex|validator)|parse-(html|tika)|index-(basic|anchor)|indexer-solr|scoring-opic|urlnormalizer-(pass|regex|basic)</value>
+  <value>protocol-http|urlfilter-(regex|validator)|parse-(html|tika|headings)|index-(basic|anchor)|indexer-solr|scoring-opic|urlnormalizer-(pass|regex|basic)</value>
   <description>Regular expression naming plugin directory names to
   include.  Any plugin not matching this expression is excluded.
   By default Nutch includes plugins to crawl HTML and various other
@@ -1642,6 +1627,28 @@ CAUTION: Set the parser.timeout to -1 or a bigger value than 30, when using this
   <value>naivebayes-wordlist.txt</value>
   <description>Put the name of the file you want to be used as a list of 
   important words to be matched in the url for the model filter. The format should be one word per line.
+  </description>
+</property>
+
+<property>
+  <name>parsefilter.thumb.s3bucket</name>
+  <value></value>
+  <description>The s3 Bucket in which thumb generation will store its result.  Access requires environment variables
+  AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY to be set to valid AWS credentials</description>
+</property>
+
+<property>
+  <name>parsefilter.thumb.serviceurl</name>
+  <value>https://image.thum.io/get/auth/${thumbapi.auth}/</value>
+  <description>The endpoint that will provide the thumbnail generation service.
+  The THUMB_APIKEY environment variable must be set and will replace {auth} in this URL.  The page that needs a URL replaces {url}.</description>
+</property>
+
+<property>
+  <name>parsefilter.thumb.credentials</name>
+  <value></value>
+  <description>Three values separated by colon
+    AWS_ACCESSKEY_ID:AWS_SECRET_ACCESSS_KEY:THUMBIO_APIKEY
   </description>
 </property>
 
@@ -1886,37 +1893,6 @@ visit https://cwiki.apache.org/confluence/display/NUTCH/SimilarityScoringFilter 
   </description>
 </property>
 
-
-<!-- scoring metadata properties
-Add scoring-metadata to the list of active plugins
- in the parameter 'plugin.includes' in order to use it.
- -->
-<property>
-  <name>scoring.db.md</name>
-  <value></value>
-  <description> 
-  Comma-separated list of keys to be taken from crawldb metadata of a url to the fetched content metadata.
-  </description>
-</property>
-
-<property>
-  <name>scoring.content.md</name>
-  <value></value>
-  <description> 
-  Comma-separated list of keys to be taken from content metadata of a url and put as metadata in the parse data.
-  </description>
-</property>
-
-<property>
-  <name>scoring.parse.md</name>
-  <value></value>
-  <description> 
-  Comma-separated list of keys to be taken from metadata of the parse data of a url and propogated as metadata to the url outlinks.
-  </description>
-</property>
-
-
-
 <!-- language-identifier plugin properties -->
 
 <property>
@@ -1943,6 +1919,10 @@ Add scoring-metadata to the list of active plugins
     identify
     detect,identify
     identify,detect
+
+    Also now supports ...identify,comprehend to request using AWS
+    Comprehend to identify language when Apache tika cannot be certain.
+    Use this with lang.identification.only.certain = true
   </description>
 </property>
 
@@ -1965,6 +1945,57 @@ Add scoring-metadata to the list of active plugins
   </description>
 </property>
 
+<property>
+  <name>lang.comprehend.credentials</name>
+  <value></value>
+  <description>aswaccesskey:awssecret
+  Credentials for using AWS Comprehend to detect languages
+  </description>
+</property>
+
+<!-- parse-translate properties -->
+
+<property>
+  <name>parse.translate.max.length</name>
+  <value>5000</value>
+  <description>
+    The maximum number of characters to translate.
+    The legnth of all fields selected for translation in a given document must fit in this length.
+    AWS Translate has a maximum of 5000 characters.
+  </description>
+</property>
+
+<property>
+  <name>parse.translate.targetlang</name>
+  <value></value>
+  <description>
+    The language to translate to.  Eg. en
+  </description>
+</property>
+
+<property>
+  <name>parse.translate.fields</name>
+  <value></value>
+  <description>list of sourceField=targetField,.. for translation.
+    parse-translate checks ParseMeta and HTMLMeta for the field;
+    All target translations are placed into ParseMeta.
+  </description>
+</property>
+
+<property>
+  <name>parse.translate.credentials</name>
+  <value></value>
+  <description>aswaccesskey:awssecret
+  Credentials for using AWS Translate to translate text
+  </description>
+</property>
+
+<property>
+  <name>parse.translate.awsregion</name>
+  <value></value>
+  <description>The AWS region to run AWS Comprehend in</description>
+</property>
+
 <!-- index-jexl-filter plugin properties -->
 
 <property>
@@ -1980,6 +2011,34 @@ Add scoring-metadata to the list of active plugins
     each property value is always an array of Strings (so if you expect one value, use [0])
   * doc - contains all the NutchFields from the NutchDocument.
     each property value is always an array of Objects.
+  </description>
+</property>
+
+<!-- index.org plugin properties -->
+
+<property>
+  <name>index.org.domainmap</name>
+  <value></value>
+  <description>
+    A map of domain name to org nam and org id
+    A three-column tab-separated list with domain, orgname and orgid
+  </description>
+</property>
+
+<property>
+  <name>index.org.serviceurl</name>
+  <value></value>
+  <description>
+    API endpoint used by plugin index-org to search for host metadata using a domain (or other searchable attribute).
+    Expected repsponse is a JSON dict with fieldname: fieldvalue for each org field.
+  </description>
+</property>
+
+<property>
+  <name>index.org.x-api-key</name>
+  <value></value>
+  <description>
+    X-API-KEY header value used by the API endpoint
   </description>
 </property>
 
@@ -2806,5 +2865,17 @@ If true (default) the Sitemap parser rejects URLs not sharing the same
   <description>
     Maximum sitemap size in bytes.
    </description>
+</property>
+
+<property>
+  <name>outlinks.host.ignore</name>
+  <value>false</value>
+  <description>Whether to include the outlinks in the indexed document (https://github.com/jorgelbg/indexer-links)</description>
+</property>
+
+<property>
+  <name>inlinks.host.ignore</name>
+  <value>false</value>
+  <description>Whether to include the inlinks in the indexed document (https://github.com/jorgelbg/indexer-links)</description>
 </property>
 </configuration>
