@@ -1,5 +1,5 @@
 # The command-line arg $1 contains a region that this CoherenceBot installation is responsible for.
-grep -v COHERENCEBOT ~/.bashrc | grep -v IVY_CACHE_ROOT ~/.bashrc > ~/.bashrc_new
+grep -v COHERENCEBOT ~/.bashrc | grep -v IVY_CACHE_ROOT > ~/.bashrc_new
 echo "# COHERENCEBOT_REGION that this cluster is responsible for:" >> ~/.bashrc_new
 echo "export COHERENCEBOT_REGION=$1" >> ~/.bashrc_new
 echo "export IVY_CACHE_ROOT=/mnt/coherencebot/ivy-cache" >> ~/.bashrc_new
