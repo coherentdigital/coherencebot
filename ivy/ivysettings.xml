@@ -18,7 +18,7 @@
 -->
   <!-- On EC2 machines the root volume is small, it helps to relocate the ivy cache to save space on root -->
   <properties environment="env"/>
-  <caches defaultCacheDir="${env.COHERENCEBOT_ROOT}/ivy-cache"/>
+  <caches defaultCacheDir="${env.IVY_CACHE_ROOT}/cache"/>
 
   <property name="oss.sonatype.org" 
     value="https://oss.sonatype.org/content/repositories/releases/" 

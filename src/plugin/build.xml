@@ -42,11 +42,13 @@
     <ant dir="exchange-jexl" target="deploy"/>
     <ant dir="index-anchor" target="deploy"/>
     <ant dir="index-basic" target="deploy"/>
+    <ant dir="index-criteria" target="deploy"/>
     <ant dir="index-geoip" target="deploy"/>
     <ant dir="index-jexl-filter" target="deploy"/>
     <ant dir="index-links" target="deploy"/>
     <ant dir="index-metadata" target="deploy"/>
     <ant dir="index-more" target="deploy"/>
+    <ant dir="index-org" target="deploy"/>
     <ant dir="index-replace" target="deploy"/>
     <ant dir="index-static" target="deploy"/>
     <ant dir="indexer-cloudsearch" target="deploy"/>
@@ -61,11 +63,14 @@
     <ant dir="mimetype-filter" target="deploy"/>
     <ant dir="nutch-extensionpoints" target="deploy"/>
     <ant dir="parse-ext" target="deploy"/>
+    <ant dir="parse-headings" target="deploy"/>
     <ant dir="parse-html" target="deploy"/>
     <ant dir="parse-js" target="deploy"/>
     <ant dir="parse-metatags" target="deploy"/>
     <ant dir="parse-swf" target="deploy"/>
+    <ant dir="parse-thumb" target="deploy"/>
     <ant dir="parse-tika" target="deploy"/>
+    <ant dir="parse-translate" target="deploy"/>
     <ant dir="parse-zip" target="deploy"/>
     <ant dir="parsefilter-debug" target="deploy"/>
     <ant dir="parsefilter-naivebayes" target="deploy"/>
@@ -86,6 +91,7 @@
     <ant dir="scoring-similarity" target="deploy"/>
     <ant dir="scoring-metadata"  target="deploy"/>
     <ant dir="subcollection" target="deploy"/>
+    <ant dir="text-summarizer" target="deploy"/>
     <ant dir="tld" target="deploy"/>
     <ant dir="urlfilter-automaton" target="deploy"/>
     <ant dir="urlfilter-domain" target="deploy" />
@@ -119,10 +125,12 @@
      <ant dir="headings" target="test"/>
      <ant dir="index-anchor" target="test"/>
      <ant dir="index-basic" target="test"/>
+     <ant dir="index-criteria" target="test"/>
      <!--ant dir="index-geoip" target="test"/-->
      <ant dir="index-jexl-filter" target="test"/>
      <ant dir="index-links" target="test"/>
      <ant dir="index-more" target="test"/>
+     <ant dir="index-org" target="test"/>
      <ant dir="index-replace" target="test"/>
      <ant dir="index-static" target="test"/>
      <ant dir="indexer-csv" target="test"/>
@@ -131,11 +139,14 @@
      <ant dir="lib-regex-filter" target="test"/>
      <ant dir="mimetype-filter" target="test"/>
      <!--ant dir="parse-ext" target="test"/-->
+     <ant dir="parse-headings" target="test"/>
      <ant dir="parse-html" target="test"/>
      <ant dir="parse-js" target="test"/>
      <ant dir="parse-metatags" target="test"/>
      <ant dir="parse-swf" target="test"/>
+     <ant dir="parse-thumb" target="test"/>
      <ant dir="parse-tika" target="test"/>
+     <ant dir="parse-translate" target="test"/>
      <ant dir="parse-zip" target="test"/>
      <ant dir="parsefilter-regex" target="test"/>
      <ant dir="protocol-file" target="test"/>
@@ -145,6 +156,7 @@
      <ant dir="scoring-orphan" target="test"/>
      <ant dir="scoring-metadata" target="test"/>
      <ant dir="subcollection" target="test"/>
+     <ant dir="text-summarizer" target="test"/>
      <ant dir="urlfilter-automaton" target="test"/>
      <ant dir="urlfilter-domain" target="test"/>
      <ant dir="urlfilter-domaindenylist" target="test"/>
@@ -183,11 +195,13 @@
     <ant dir="exchange-jexl" target="clean"/>
     <ant dir="index-anchor" target="clean"/>
     <ant dir="index-basic" target="clean"/>
+    <ant dir="index-criteria" target="clean"/>
     <ant dir="index-geoip" target="clean"/>
     <ant dir="index-jexl-filter" target="clean"/>
     <ant dir="index-links" target="clean"/>
     <ant dir="index-metadata" target="clean"/>
     <ant dir="index-more" target="clean"/>
+    <ant dir="index-org" target="clean"/>
     <ant dir="index-replace" target="clean"/>
     <ant dir="index-static" target="clean"/>
     <ant dir="indexer-cloudsearch" target="clean"/>
@@ -209,11 +223,14 @@
     <ant dir="mimetype-filter" target="clean"/>
     <ant dir="nutch-extensionpoints" target="clean"/>
     <ant dir="parse-ext" target="clean"/>
+    <ant dir="parse-headings" target="clean"/>
     <ant dir="parse-html" target="clean"/>
     <ant dir="parse-js" target="clean"/>
     <ant dir="parse-metatags" target="clean"/>
     <ant dir="parse-swf" target="clean"/>
+    <ant dir="parse-thumb" target="clean"/>
     <ant dir="parse-tika" target="clean"/>
+    <ant dir="parse-translate" target="clean"/>
     <ant dir="parse-zip" target="clean"/>
     <ant dir="parsefilter-debug" target="clean" />
     <ant dir="parsefilter-naivebayes" target="clean" />
@@ -234,6 +251,7 @@
     <ant dir="scoring-similarity" target="clean"/>
     <ant dir="scoring-metadata" target="clean"/>
     <ant dir="subcollection" target="clean"/>
+    <ant dir="text-summarizer" target="clean"/>
     <ant dir="tld" target="clean"/>
     <ant dir="urlfilter-automaton" target="clean"/>
     <ant dir="urlfilter-domain" target="clean" />
