@@ -17,7 +17,7 @@
    limitations under the License.
 -->
   <!-- On EC2 machines the root volume is small, it helps to relocate the ivy cache to save space on root -->
-  <caches defaultCacheDir="./ivy-cache"/>
+  <caches defaultCacheDir="${coherencebot.root}/ivy-cache"/>
 
   <property name="oss.sonatype.org" 
     value="https://oss.sonatype.org/content/repositories/releases/" 
