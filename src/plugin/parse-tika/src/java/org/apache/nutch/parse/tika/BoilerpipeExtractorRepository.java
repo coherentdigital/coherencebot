@@ -26,28 +26,33 @@ import de.l3s.boilerpipe.BoilerpipeExtractor;
 class BoilerpipeExtractorRepository {
 
   private static final Logger LOG = LoggerFactory
-		      .getLogger(MethodHandles.lookup().lookupClass());
+      .getLogger(MethodHandles.lookup().lookupClass());
   public static final HashMap<String, BoilerpipeExtractor> extractorRepository = new HashMap<>();
- 
-    /**
-     * Returns an instance of the specified extractor
-     */
-  public static synchronized BoilerpipeExtractor getExtractor(String boilerpipeExtractorName) {
-      // Check if there's no instance of this extractor
-    if (!extractorRepository.containsKey(boilerpipeExtractorName)) {
-        // FQCN
-      boilerpipeExtractorName = "de.l3s.boilerpipe.extractors." + boilerpipeExtractorName;
 
-        // Attempt to load the class
+  /**
+   * Returns an instance of the specified extractor
+   */
+  public static synchronized BoilerpipeExtractor getExtractor(
+      String boilerpipeExtractorName) {
+    // Check if there's no instance of this extractor
+    if (!extractorRepository.containsKey(boilerpipeExtractorName)) {
+      // FQCN
+      boilerpipeExtractorName = "de.l3s.boilerpipe.extractors."
+          + boilerpipeExtractorName;
+
+      // Attempt to load the class
       try {
         ClassLoader loader = BoilerpipeExtractor.class.getClassLoader();
-        Class extractorClass = loader.loadClass(boilerpipeExtractorName);
+        Class<?> extractorClass = loader.loadClass(boilerpipeExtractorName);
 
-          // Add an instance to the repository
-        extractorRepository.put(boilerpipeExtractorName, (BoilerpipeExtractor)extractorClass.getConstructor().newInstance());
+        // Add an instance to the repository
+        extractorRepository.put(boilerpipeExtractorName,
+            (BoilerpipeExtractor) extractorClass.getConstructor()
+                .newInstance());
 
       } catch (ClassNotFoundException e) {
-        LOG.error("BoilerpipeExtractor " + boilerpipeExtractorName + " not found!");
+        LOG.error(
+            "BoilerpipeExtractor " + boilerpipeExtractorName + " not found!");
       } catch (InstantiationException e) {
         LOG.error("Could not instantiate " + boilerpipeExtractorName);
       } catch (Exception e) {

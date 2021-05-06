@@ -46,7 +46,7 @@ import org.apache.nutch.scoring.ScoringFilterException;
 public class DepthScoringFilter extends Configured implements ScoringFilter {
 
   private static final Logger LOG = LoggerFactory
-		      .getLogger(MethodHandles.lookup().lookupClass());
+      .getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String DEPTH_KEY = "_depth_";
   public static final Text DEPTH_KEY_W = new Text(DEPTH_KEY);
@@ -72,9 +72,9 @@ public class DepthScoringFilter extends Configured implements ScoringFilter {
   }
 
   @Override
-  public CrawlDatum distributeScoreToOutlinks(Text fromUrl,
-      ParseData parseData, Collection<Entry<Text, CrawlDatum>> targets,
-      CrawlDatum adjust, int allCount) throws ScoringFilterException {
+  public CrawlDatum distributeScoreToOutlinks(Text fromUrl, ParseData parseData,
+      Collection<Entry<Text, CrawlDatum>> targets, CrawlDatum adjust,
+      int allCount) throws ScoringFilterException {
     if (targets.isEmpty()) {
       return adjust;
     }
@@ -104,8 +104,8 @@ public class DepthScoringFilter extends Configured implements ScoringFilter {
     while (it.hasNext()) {
       Entry<Text, CrawlDatum> e = it.next();
       // record increased depth
-      e.getValue().getMetaData()
-          .put(DEPTH_KEY_W, new IntWritable(curDepth + 1));
+      e.getValue().getMetaData().put(DEPTH_KEY_W,
+          new IntWritable(curDepth + 1));
       // record maxDepth if any
       if (customMaxDepth != null) {
         e.getValue().getMetaData().put(MAX_DEPTH_KEY_W, customMaxDepth);
@@ -120,8 +120,8 @@ public class DepthScoringFilter extends Configured implements ScoringFilter {
       throws ScoringFilterException {
     // boost up by current depth
     int curDepth, curMaxDepth;
-    IntWritable maxDepth = (IntWritable) datum.getMetaData().get(
-        MAX_DEPTH_KEY_W);
+    IntWritable maxDepth = (IntWritable) datum.getMetaData()
+        .get(MAX_DEPTH_KEY_W);
     if (maxDepth != null) {
       curMaxDepth = maxDepth.get();
     } else {
@@ -151,8 +151,8 @@ public class DepthScoringFilter extends Configured implements ScoringFilter {
     // e.g. obtained from redirection
     // in which case we don't want to override them
     if (datum.getMetaData().get(MAX_DEPTH_KEY_W) == null)
-      datum.getMetaData()
-          .put(MAX_DEPTH_KEY_W, new IntWritable(defaultMaxDepth));
+      datum.getMetaData().put(MAX_DEPTH_KEY_W,
+          new IntWritable(defaultMaxDepth));
     // initial depth is 1
     if (datum.getMetaData().get(DEPTH_KEY_W) == null)
       datum.getMetaData().put(DEPTH_KEY_W, new IntWritable(1));
@@ -170,8 +170,8 @@ public class DepthScoringFilter extends Configured implements ScoringFilter {
       int depth = Integer.parseInt(depthString);
       datum.getMetaData().put(MAX_DEPTH_KEY_W, new IntWritable(depth));
     } else { // put the default
-      datum.getMetaData()
-          .put(MAX_DEPTH_KEY_W, new IntWritable(defaultMaxDepth));
+      datum.getMetaData().put(MAX_DEPTH_KEY_W,
+          new IntWritable(defaultMaxDepth));
     }
     // initial depth is 1
     datum.getMetaData().put(DEPTH_KEY_W, new IntWritable(1));
@@ -191,14 +191,14 @@ public class DepthScoringFilter extends Configured implements ScoringFilter {
   }
 
   @Override
-  public void passScoreBeforeParsing(Text url, CrawlDatum datum, Content content)
-      throws ScoringFilterException {
+  public void passScoreBeforeParsing(Text url, CrawlDatum datum,
+      Content content) throws ScoringFilterException {
     IntWritable depth = (IntWritable) datum.getMetaData().get(DEPTH_KEY_W);
     if (depth != null) {
       content.getMetadata().set(DEPTH_KEY, depth.toString());
     }
-    IntWritable maxdepth = (IntWritable) datum.getMetaData().get(
-        MAX_DEPTH_KEY_W);
+    IntWritable maxdepth = (IntWritable) datum.getMetaData()
+        .get(MAX_DEPTH_KEY_W);
     if (maxdepth != null) {
       content.getMetadata().set(MAX_DEPTH_KEY, maxdepth.toString());
     }

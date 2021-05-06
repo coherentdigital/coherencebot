@@ -18,7 +18,6 @@ package org.apache.nutch.parse.thumb;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.net.URLConnection;
@@ -54,11 +53,12 @@ import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.github.slugify.Slugify;
 
 /**
- * HtmlParseFilter to generate a thumb using thumb.io and store it in S3.
- * The result is returned in parseMeta("thumbnail");
+ * HtmlParseFilter to generate a thumb using thumb.io and store it in S3. The
+ * result is returned in parseMeta("thumbnail");
  */
 public class ThumbnailParseFilter implements HtmlParseFilter {
-  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger LOG = LoggerFactory
+      .getLogger(MethodHandles.lookup().lookupClass());
 
   private Configuration conf;
   private String s3Bucket;
@@ -67,10 +67,8 @@ public class ThumbnailParseFilter implements HtmlParseFilter {
   private String awsAccessKeyId;
   private String awsSecretAccessKey;
   private String thumbApiKey;
-  private static final String[] supportedMimeTypes = {
-    "application/pdf",
-    "text/html"
-  };
+  private static final String[] supportedMimeTypes = { "application/pdf",
+      "text/html" };
   private AmazonS3 s3 = null;
 
   public ParseResult filter(Content content, ParseResult parseResult,
@@ -80,14 +78,16 @@ public class ThumbnailParseFilter implements HtmlParseFilter {
     String mimeType = content.getContentType();
     List<String> supportedMimeList = Arrays.asList(supportedMimeTypes);
     if (mimeType == null || !supportedMimeList.contains(mimeType)) {
-      LOG.debug("Cannot generate a thumbail for mime type " + mimeType );
+      LOG.debug("Cannot generate a thumbail for mime type " + mimeType);
       return parseResult;
     }
-    
-    // Check if its a significant quantity of text.  We don't need thumbnails for near empty pages.
+
+    // Check if its a significant quantity of text. We don't need thumbnails for
+    // near empty pages.
     int contentLength = content.getContent().length;
     if (contentLength < 4000) {
-      LOG.debug("Not generating a thumbail; document too small: " + contentLength );
+      LOG.debug(
+          "Not generating a thumbail; document too small: " + contentLength);
       return parseResult;
     }
 
@@ -110,7 +110,8 @@ public class ThumbnailParseFilter implements HtmlParseFilter {
         thumbnailUrl = parse.getData().getMeta("og:image");
       }
       if (thumbnailUrl != null) {
-        LOG.debug("Page " + urlString + "already has thumbnail at " + thumbnailUrl);
+        LOG.debug(
+            "Page " + urlString + "already has thumbnail at " + thumbnailUrl);
         return parseResult;
       }
     }
@@ -120,7 +121,8 @@ public class ThumbnailParseFilter implements HtmlParseFilter {
       boolean keyExists = false;
 
       // We make a key for the page in the form host.domain.com/page-slug.png
-      String urlStringNoProtocol = protocolPattern.matcher(urlString).replaceAll("");
+      String urlStringNoProtocol = protocolPattern.matcher(urlString)
+          .replaceAll("");
       String s3Key = null;
       Matcher m = hostPattern.matcher(urlStringNoProtocol);
       Slugify slg = new Slugify();
@@ -129,17 +131,17 @@ public class ThumbnailParseFilter implements HtmlParseFilter {
         pathSuffix = m.group(2);
         s3Key = hostPrefix + "/" + slg.slugify(pathSuffix) + ".png";
       } else {
-        s3Key = urlStringNoProtocol + "/" + slg.slugify(urlStringNoProtocol) + ".png";
+        s3Key = urlStringNoProtocol + "/" + slg.slugify(urlStringNoProtocol)
+            + ".png";
       }
 
       // Search s3 for the key...
       if (s3 == null) {
-        BasicAWSCredentials awsCreds = 
-          new BasicAWSCredentials(awsAccessKeyId, awsSecretAccessKey);
+        BasicAWSCredentials awsCreds = new BasicAWSCredentials(awsAccessKeyId,
+            awsSecretAccessKey);
         s3 = AmazonS3ClientBuilder.standard()
-          .withCredentials(new AWSStaticCredentialsProvider(awsCreds))
-          .withRegion(Regions.fromName(s3RegionString))
-          .build();
+            .withCredentials(new AWSStaticCredentialsProvider(awsCreds))
+            .withRegion(Regions.fromName(s3RegionString)).build();
       }
 
       ListObjectsV2Result result = s3.listObjectsV2(s3Bucket, s3Key);
@@ -161,10 +163,10 @@ public class ThumbnailParseFilter implements HtmlParseFilter {
           serviceUrl = serviceUrl.replace("/fullpage", "");
         }
         try {
-          serviceUrl = serviceUrl + 
-            URLEncoder.encode(urlString, StandardCharsets.UTF_8.toString());
+          serviceUrl = serviceUrl
+              + URLEncoder.encode(urlString, StandardCharsets.UTF_8.toString());
           URL url = new URL(serviceUrl);
-	  URLConnection con = null;
+          URLConnection con = null;
 
           // Save the image in S3
           try {
@@ -174,29 +176,28 @@ public class ThumbnailParseFilter implements HtmlParseFilter {
             con.setReadTimeout(60000);
             con.connect();
 
-	    // Read the thum.io image into a byte array
+            // Read the thum.io image into a byte array
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             IOUtils.copy(con.getInputStream(), baos);
-	    baos.close();
+            baos.close();
 
-	    // Convert the byte array into an input stream to S3
-	    byte[] image = baos.toByteArray();
-	    if (image.length > 0) {
+            // Convert the byte array into an input stream to S3
+            byte[] image = baos.toByteArray();
+            if (image.length > 0) {
               ByteArrayInputStream in = new ByteArrayInputStream(image);
-	      ObjectMetadata s3Meta = new ObjectMetadata();
+              ObjectMetadata s3Meta = new ObjectMetadata();
               s3Meta.setContentType("image/png");
-	      s3Meta.setContentLength(image.length);
-              s3.putObject(
-                new PutObjectRequest(s3Bucket, s3Key, in, s3Meta)
+              s3Meta.setContentLength(image.length);
+              s3.putObject(new PutObjectRequest(s3Bucket, s3Key, in, s3Meta)
                   .withCannedAcl(CannedAccessControlList.PublicRead));
               LOG.debug("Saved thumbnail in s3 at " + s3Key);
               thumbnailUrl = s3.getUrl(s3Bucket, s3Key).toString();
 
               // Save the thumbnail URL in the parseMeta
               parse.getData().getParseMeta().set("thumbnail", thumbnailUrl);
-	    } else {
+            } else {
               LOG.debug("Thumbnail returned is zero bytes for " + serviceUrl);
-	    }
+            }
           } catch (AmazonServiceException e) {
             LOG.error("Can't save the image in S3", e);
           }
@@ -211,7 +212,7 @@ public class ThumbnailParseFilter implements HtmlParseFilter {
     } catch (Exception e) {
       LOG.error("Unable to generate thumbnail for " + urlString, e);
     }
-    
+
     return parseResult;
   }
 
@@ -225,15 +226,15 @@ public class ThumbnailParseFilter implements HtmlParseFilter {
     // Check that the config has the credentials.
     String credentials = conf.getTrimmed("parsefilter.thumb.credentials");
     if (credentials == null) {
-      String message = "Set AWS_ACCESS_KEY_ID:AWS_SECRET_ACCESS_KEY:THUMBIO_APIKEY in config element parserfilter.thumb.credentials. " + 
-        " This allows using S3 to store results.";
+      String message = "Set AWS_ACCESS_KEY_ID:AWS_SECRET_ACCESS_KEY:THUMBIO_APIKEY in config element parserfilter.thumb.credentials. "
+          + " This allows using S3 to store results.";
       LOG.error(message);
     } else {
-      String[] credParts = credentials.split(":",3);
+      String[] credParts = credentials.split(":", 3);
       if (credParts.length != 3) {
-          String message = "Set AWS_ACCESS_KEY_ID:AWS_SECRET_ACCESS_KEY:THUMBIO_APIKEY in config element parserfilter.thumb.credentials. " + 
-            " This allows using S3 to store results.";
-          LOG.error(message);
+        String message = "Set AWS_ACCESS_KEY_ID:AWS_SECRET_ACCESS_KEY:THUMBIO_APIKEY in config element parserfilter.thumb.credentials. "
+            + " This allows using S3 to store results.";
+        LOG.error(message);
       } else {
         awsAccessKeyId = credParts[0];
         awsSecretAccessKey = credParts[1];

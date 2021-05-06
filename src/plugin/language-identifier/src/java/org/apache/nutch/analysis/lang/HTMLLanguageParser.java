@@ -42,7 +42,6 @@ import org.w3c.dom.Node;
 
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.comprehend.AmazonComprehend;
 import com.amazonaws.services.comprehend.AmazonComprehendClientBuilder;
@@ -91,14 +90,17 @@ public class HTMLLanguageParser implements HtmlParseFilter {
   private Configuration conf;
 
   /**
-   * Scan the HTML document looking at possible indications of content language<br>
+   * Scan the HTML document looking at possible indications of content
+   * language<br>
    * <ul>
    * <li>1. html lang attribute
-   * (http://www.w3.org/TR/REC-html40/struct/dirlang.html#h-8.1) <li>2. meta
-   * dc.language
+   * (http://www.w3.org/TR/REC-html40/struct/dirlang.html#h-8.1)
+   * <li>2. meta dc.language
    * (http://dublincore.org/documents/2000/07/16/usageguide/qualified
-   * -html.shtml#language) <li>3. meta http-equiv (content-language)
-   * (http://www.w3.org/TR/REC-html40/struct/global.html#h-7.4.4.2) <br></ul>
+   * -html.shtml#language)
+   * <li>3. meta http-equiv (content-language)
+   * (http://www.w3.org/TR/REC-html40/struct/global.html#h-7.4.4.2) <br>
+   * </ul>
    */
   public ParseResult filter(Content content, ParseResult parseResult,
       HTMLMetaTags metaTags, DocumentFragment doc) {
@@ -152,7 +154,10 @@ public class HTMLLanguageParser implements HtmlParseFilter {
     return lang;
   }
 
-  /** Use Tika statistical language identification or AWS Comprehend to extract page language */
+  /**
+   * Use Tika statistical language identification or AWS Comprehend to extract
+   * page language
+   */
   private String identifyLanguage(Parse parse) {
     StringBuilder text = new StringBuilder();
     if (parse == null)
@@ -241,8 +246,8 @@ public class HTMLLanguageParser implements HtmlParseFilter {
 
           // Check for the lang HTML attribute
           if (htmlAttribute == null) {
-            htmlAttribute = parseLanguage(((Element) currentNode)
-                .getAttribute("lang"));
+            htmlAttribute = parseLanguage(
+                ((Element) currentNode).getAttribute("lang"));
           }
 
           // Check for Meta
@@ -269,8 +274,8 @@ public class HTMLLanguageParser implements HtmlParseFilter {
               for (int i = 0; i < attrs.getLength(); i++) {
                 Node attrnode = attrs.item(i);
                 if ("http-equiv".equalsIgnoreCase(attrnode.getNodeName())) {
-                  if ("content-language".equals(attrnode.getNodeValue()
-                      .toLowerCase())) {
+                  if ("content-language"
+                      .equals(attrnode.getNodeValue().toLowerCase())) {
                     Node valueattr = attrs.getNamedItem("content");
                     if (valueattr != null) {
                       httpEquiv = parseLanguage(valueattr.getNodeValue());
@@ -321,41 +326,42 @@ public class HTMLLanguageParser implements HtmlParseFilter {
   }
 
   /**
-   * Detect language using AWS Comprehend.
-   * Returns 2-letter language code if AWS comprehend confidence is 90% or higher.
+   * Detect language using AWS Comprehend. Returns 2-letter language code if AWS
+   * comprehend confidence is 90% or higher.
    */
   private String comprehendLanguage(String text) {
     try {
       // Call AWS Comprehend detectDominantLanguage API
-      BasicAWSCredentials awsCreds =
-        new BasicAWSCredentials(awsAccessKeyId, awsSecretAccessKey);
+      BasicAWSCredentials awsCreds = new BasicAWSCredentials(awsAccessKeyId,
+          awsSecretAccessKey);
 
-      AmazonComprehend comprehendClient =
-        AmazonComprehendClientBuilder.standard()
+      AmazonComprehend comprehendClient = AmazonComprehendClientBuilder
+          .standard()
           .withCredentials(new AWSStaticCredentialsProvider(awsCreds))
-          .withRegion(Regions.fromName(awsRegionString))
-          .build();
+          .withRegion(Regions.fromName(awsRegionString)).build();
 
-      DetectDominantLanguageRequest detectDominantLanguageRequest = 
-        new DetectDominantLanguageRequest().withText(text);
-      DetectDominantLanguageResult detectDominantLanguageResult = 
-        comprehendClient.detectDominantLanguage(detectDominantLanguageRequest);
-      List<DominantLanguage> langs = detectDominantLanguageResult.getLanguages();
-      for (int i = 0; i < langs.size(); i++ ) {
+      DetectDominantLanguageRequest detectDominantLanguageRequest = new DetectDominantLanguageRequest()
+          .withText(text);
+      DetectDominantLanguageResult detectDominantLanguageResult = comprehendClient
+          .detectDominantLanguage(detectDominantLanguageRequest);
+      List<DominantLanguage> langs = detectDominantLanguageResult
+          .getLanguages();
+      for (int i = 0; i < langs.size(); i++) {
         DominantLanguage dl = langs.get(i);
         Float score = dl.getScore();
         String language = dl.getLanguageCode();
         if (score >= 0.9f) {
           if (language.length() > 0) {
-	    String[] langParts = language.split("-");
+            String[] langParts = language.split("-");
             return langParts[0];
           }
         } else {
           LOG.warn("Language " + language + " scored " + score);
-	}
-     }
+        }
+      }
     } catch (Exception e) {
-      LOG.error("Unable to detect language using AWS Comprehend: " + e.getMessage());
+      LOG.error(
+          "Unable to detect language using AWS Comprehend: " + e.getMessage());
     }
 
     return null;
@@ -381,14 +387,14 @@ public class HTMLLanguageParser implements HtmlParseFilter {
       // Check that the config has the credentials.
       String credentials = conf.getTrimmed("lang.comprehend.credentials");
       if (credentials == null) {
-        String message = "Set AWS_ACCESS_KEY_ID:AWS_SECRET_ACCESS_KEY in config element lang.comprehend.credentials. " +
-          " This allows using AWS Comprehend to detect language when Tika cannot.";
+        String message = "Set AWS_ACCESS_KEY_ID:AWS_SECRET_ACCESS_KEY in config element lang.comprehend.credentials. "
+            + " This allows using AWS Comprehend to detect language when Tika cannot.";
         LOG.error(message);
       } else {
-        String[] credParts = credentials.split(":",2);
+        String[] credParts = credentials.split(":", 2);
         if (credParts.length != 2) {
-          String message = "Set AWS_ACCESS_KEY_ID:AWS_SECRET_ACCESS_KEY in config element lang.comprehend.credentials. " +
-            " This allows using AWS Comprehend to detect language when Tika cannot.";
+          String message = "Set AWS_ACCESS_KEY_ID:AWS_SECRET_ACCESS_KEY in config element lang.comprehend.credentials. "
+              + " This allows using AWS Comprehend to detect language when Tika cannot.";
           LOG.error(message);
         } else {
           awsAccessKeyId = credParts[0];

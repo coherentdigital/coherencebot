@@ -1,7 +1,6 @@
 package org.apache.nutch.indexer.summary;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.Collections;
 import org.slf4j.LoggerFactory;
 
@@ -22,7 +21,7 @@ class SummaryTool {
 
   double[][] intersectionMatrix;
 
-  public SummaryTool(String fullText){
+  public SummaryTool(String fullText) {
     if (fullText != null) {
       // In PDF extracts; spaces are often missing between sentences.
       // This adds a space between any period followed by an uppercase letter.
@@ -31,7 +30,7 @@ class SummaryTool {
     }
   }
 
-  private void init(){
+  private void init() {
     sentences = new ArrayList<Sentence>();
     contentSummary = new ArrayList<Sentence>();
     noOfSentences = 0;
@@ -40,18 +39,19 @@ class SummaryTool {
   /**
    * Gets the sentences from the entire passage
    */
-  private void extractSentencesFromContext(){
+  private void extractSentencesFromContext() {
     if (textToSummarize != null && textToSummarize.length() > 0) {
       String[] rawSentences = textToSummarize.split("\\.\\s+", MAX_CANDIDATES);
-      for (int i = 0; i < rawSentences.length && i < (MAX_CANDIDATES - 1); i++) {
-	String sentence = rawSentences[i];
-	if (sentence.length() > MAX_SENTENCE_LENGTH) {
-	  sentence = sentence.substring(0, MAX_SENTENCE_LENGTH);
-	}
-	if (sentence.length() < MIN_SENTENCE_LENGTH) {
-	  continue;
-	}
-	sentence = sentence.trim() + ".";
+      for (int i = 0; i < rawSentences.length
+          && i < (MAX_CANDIDATES - 1); i++) {
+        String sentence = rawSentences[i];
+        if (sentence.length() > MAX_SENTENCE_LENGTH) {
+          sentence = sentence.substring(0, MAX_SENTENCE_LENGTH);
+        }
+        if (sentence.length() < MIN_SENTENCE_LENGTH) {
+          continue;
+        }
+        sentence = sentence.trim() + ".";
         sentences.add(new Sentence(noOfSentences, sentence));
         noOfSentences++;
       }
@@ -73,17 +73,19 @@ class SummaryTool {
   }
 
   /**
-   * For each sentence compute a score that is based on the common words shared with other sentences.
+   * For each sentence compute a score that is based on the common words shared
+   * with other sentences.
    */
   private void createIntersectionMatrix() {
     intersectionMatrix = new double[noOfSentences][noOfSentences];
     for (int i = 0; i < noOfSentences; i++) {
-      for (int j = 0; j < noOfSentences; j++){
+      for (int j = 0; j < noOfSentences; j++) {
 
-        if ( i <= j ) {
+        if (i <= j) {
           Sentence str1 = sentences.get(i);
           Sentence str2 = sentences.get(j);
-          intersectionMatrix[i][j] = noOfCommonWords(str1, str2) / ((double)(str1.noOfWords + str2.noOfWords) /2);
+          intersectionMatrix[i][j] = noOfCommonWords(str1, str2)
+              / ((double) (str1.noOfWords + str2.noOfWords) / 2);
         } else {
           intersectionMatrix[i][j] = intersectionMatrix[j][i];
         }
@@ -92,23 +94,24 @@ class SummaryTool {
   }
 
   /**
-   * Distribute the scores from the intersection matrix to each sentence.
-   * This sums the score for each sentence adding all the scores of other sentences it shares words with.
+   * Distribute the scores from the intersection matrix to each sentence. This
+   * sums the score for each sentence adding all the scores of other sentences
+   * it shares words with.
    */
-  private void assignScores(){
+  private void assignScores() {
     for (int i = 0; i < noOfSentences; i++) {
       double score = 0;
-      for (int j = 0; j < noOfSentences; j++){
+      for (int j = 0; j < noOfSentences; j++) {
         score += intersectionMatrix[i][j];
       }
-      ((Sentence)sentences.get(i)).score = score;
+      ((Sentence) sentences.get(i)).score = score;
     }
   }
 
   /**
    * Create a summary with <code>count</code> sentences.
    */
-  public String createSummary( int count ) {
+  public String createSummary(int count) {
     init();
     extractSentencesFromContext();
     createIntersectionMatrix();
@@ -116,14 +119,14 @@ class SummaryTool {
 
     // Sort based on score (importance).
     Collections.sort(sentences, new SentenceComparator());
-    for (int i = 0; i < count && i < sentences.size(); i++){
+    for (int i = 0; i < count && i < sentences.size(); i++) {
       contentSummary.add(sentences.get(i));
     }
 
     // To ensure summary is in reading order.
     Collections.sort(contentSummary, new SentenceComparatorForSummary());
     String summary = "";
-    for (Sentence sentence : contentSummary ) {
+    for (Sentence sentence : contentSummary) {
       if (summary.length() > 0) {
         summary += " [...] ";
       }
@@ -135,16 +138,17 @@ class SummaryTool {
   /**
    * Extracts a heading from OCR'ed text
    */
-  public String extractHeading(){
+  public String extractHeading() {
     if (textToSummarize != null && textToSummarize.length() > 0) {
       String[] rawLines = textToSummarize.split("\n", MAX_HEADING_CANDIDATES);
-      for (int i = 0; i < rawLines.length && i < (MAX_HEADING_CANDIDATES - 1); i++) {
+      for (int i = 0; i < rawLines.length
+          && i < (MAX_HEADING_CANDIDATES - 1); i++) {
         String heading = rawLines[i].trim();
-	// If we start getting into lengthy text, abort the search.
+        // If we start getting into lengthy text, abort the search.
         if (heading.length() > MAX_HEADING_LENGTH) {
           break;
         }
-	// Select the first line greater than or equal to our MIN length
+        // Select the first line greater than or equal to our MIN length
         if (heading.length() >= MIN_HEADING_LENGTH) {
           return heading + " [from PDF text]";
         }

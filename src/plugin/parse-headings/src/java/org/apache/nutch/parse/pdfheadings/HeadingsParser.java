@@ -40,21 +40,25 @@ import org.w3c.dom.DocumentFragment;
 import org.xml.sax.ContentHandler;
 
 /**
- * This parse filter uses Tika to extract the first three major headings from the raw content.
+ * This parse filter uses Tika to extract the first three major headings from
+ * the raw content.
  *
- * It it mainly concerned with PDF texts where it will identify
- * headings based on font sizes greater than 14.0pts and then it will select
- * lines of text with the largest of these fonts from the first page.
+ * It it mainly concerned with PDF texts where it will identify headings based
+ * on font sizes greater than 14.0pts and then it will select lines of text with
+ * the largest of these fonts from the first page.
  * 
- * It stores the results in the 'heading' meta element in the ParseData.parseMeta returned.
+ * It stores the results in the 'heading' meta element in the
+ * ParseData.parseMeta returned.
  * 
- * In many cases you will find the title produced by parse-tika to be empty or nonsense
- * for PDFs because it is derived from PDF's meta information which is often uncurated
- * and many PDF publishing operations don't place a meaningful value in this.
+ * In many cases you will find the title produced by parse-tika to be empty or
+ * nonsense for PDFs because it is derived from PDF's meta information which is
+ * often uncurated and many PDF publishing operations don't place a meaningful
+ * value in this.
  * 
- * So the heading provides an alternative view into the document of its first three major
- * headings.  This may or may not contain the actual title, but it is quite likely
- * (for PDFs anyway) to be more helpful in a snippet than the PDF title meta.
+ * So the heading provides an alternative view into the document of its first
+ * three major headings. This may or may not contain the actual title, but it is
+ * quite likely (for PDFs anyway) to be more helpful in a snippet than the PDF
+ * title meta.
  */
 public class HeadingsParser implements HtmlParseFilter {
 
@@ -79,7 +83,8 @@ public class HeadingsParser implements HtmlParseFilter {
     if ("application/pdf".equalsIgnoreCase(mimeType)) {
       parser = new PDFParser();
     } else {
-      CompositeParser compositeParser = (CompositeParser) tikaConfig.getParser();
+      CompositeParser compositeParser = (CompositeParser) tikaConfig
+          .getParser();
       parser = compositeParser.getParsers().get(MediaType.parse(mimeType));
     }
     if (parser == null) {
@@ -110,8 +115,7 @@ public class HeadingsParser implements HtmlParseFilter {
 
     tikamd.set(Metadata.CONTENT_TYPE, mimeType);
     try {
-      parser.parse(new ByteArrayInputStream(raw),
-          domHandler, tikamd, context);
+      parser.parse(new ByteArrayInputStream(raw), domHandler, tikamd, context);
     } catch (Exception e) {
       LOG.error("Error parsing " + content.getUrl(), e);
       return parseResult;
@@ -122,23 +126,23 @@ public class HeadingsParser implements HtmlParseFilter {
       LOG.debug("HeadingParser produced heading " + heading);
       // Suffix heading with a rubric so later we can tell where it came from.
       String headingPlusRubric = heading + " [from PDF fonts]";
-      parseResult.get(content.getUrl()).getData()
-        .getParseMeta().set("heading", headingPlusRubric);
+      parseResult.get(content.getUrl()).getData().getParseMeta().set("heading",
+          headingPlusRubric);
     }
 
     int nPages = utils.getPageCount(node);
     if (nPages > 0) {
       LOG.debug("HeadingParser produced pages " + nPages);
-      parseResult.get(content.getUrl()).getData()
-        .getParseMeta().set("pages", Integer.valueOf(nPages).toString());
+      parseResult.get(content.getUrl()).getData().getParseMeta().set("pages",
+          Integer.valueOf(nPages).toString());
     }
 
     // Override the web-based Last-Modified with PDFParser's Last-Modified
     // This ensures copied PDFs still get a correct publication date.
     Object lastModified = tikamd.get("Last-Modified");
     if (lastModified != null) {
-      parseResult.get(content.getUrl()).getData()
-        .getParseMeta().set("Last-Modified", lastModified.toString());
+      parseResult.get(content.getUrl()).getData().getParseMeta()
+          .set("Last-Modified", lastModified.toString());
     }
     return parseResult;
   }

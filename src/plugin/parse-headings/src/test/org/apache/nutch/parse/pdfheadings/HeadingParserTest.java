@@ -69,8 +69,9 @@ public class HeadingParserTest {
     HtmlParseFilter filter = new HeadingsParser();
     filter.setConf(conf);
     DocumentFragment node = new HTMLDocumentImpl().createDocumentFragment();
- 
-    ParseResult parseResult = new ParseStatus().getEmptyParseResult(urlString, conf);
+
+    ParseResult parseResult = new ParseStatus().getEmptyParseResult(urlString,
+        conf);
 
     parseResult = filter.filter(content, parseResult, metaTags, node);
 

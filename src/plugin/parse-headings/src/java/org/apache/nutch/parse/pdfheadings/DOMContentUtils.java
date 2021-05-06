@@ -50,7 +50,8 @@ public class DOMContentUtils {
   }
 
   public void setConf(Configuration conf) {
-    blockNodes = new HashSet<>(conf.getTrimmedStringCollection("parser.html.line.separators"));
+    blockNodes = new HashSet<>(
+        conf.getTrimmedStringCollection("parser.html.line.separators"));
   }
 
   /**
@@ -213,8 +214,8 @@ public class DOMContentUtils {
   }
 
   /**
-   * This method takes a DOM {@link Node}, and will
-   * return the top 3 headings by font size (for PDF parsed docs).
+   * This method takes a DOM {@link Node}, and will return the top 3 headings by
+   * font size (for PDF parsed docs).
    * 
    * @return String
    */
@@ -241,7 +242,8 @@ public class DOMContentUtils {
         getText(nodeBuffer, currentNode);
         String nodeText = nodeBuffer.toString();
         if (nodeText.length() > 0) {
-          if (nodeName.equalsIgnoreCase("h1") || nodeName.equalsIgnoreCase("h2")) {
+          if (nodeName.equalsIgnoreCase("h1")
+              || nodeName.equalsIgnoreCase("h2")) {
             if (sb.toString().length() > 0) {
               sb.append(" - ");
             }
@@ -271,7 +273,8 @@ public class DOMContentUtils {
     }
 
     // For font-based selection...
-    // iterate through the nodes and select the first three nodes that have a large font.
+    // iterate through the nodes and select the first three nodes that have a
+    // large font.
     if (maxThreeFontSizes.size() > 0 && nHeadings < 3) {
       walker = new NodeWalker(node);
       while (walker.hasNext()) {
@@ -291,8 +294,9 @@ public class DOMContentUtils {
               try {
                 Float fFontSize = Float.parseFloat(fontSize);
                 if (maxThreeFontSizes.contains(fFontSize)) {
-                  String heading = headingPattern.matcher(nodeText).replaceAll("");
-		  if (heading.length() > 0) {
+                  String heading = headingPattern.matcher(nodeText)
+                      .replaceAll("");
+                  if (heading.length() > 0) {
                     if (sb.toString().length() > 0) {
                       sb.append(" - ");
                     }
@@ -304,7 +308,7 @@ public class DOMContentUtils {
                     }
                     sb.append(heading);
                     nHeadings++;
-		  }
+                  }
                 }
               } catch (Exception e) {
                 LOG.error("Cant obtain heading.", e);
@@ -319,8 +323,7 @@ public class DOMContentUtils {
   }
 
   /**
-   * This method takes a DOM {@link Node}, and will
-   * return the xmptpg:npages.
+   * This method takes a DOM {@link Node}, and will return the xmptpg:npages.
    * 
    * @return -1 if npages not known or the page count.
    */
@@ -343,7 +346,8 @@ public class DOMContentUtils {
             getText(nodeBuffer, currentNode);
             String nodeText = nodeBuffer.toString();
             // If we didnt find a page count in meta, but we do have a non-zero
-            // body length, we set a nominal page count of 1 (to handle for example html)
+            // body length, we set a nominal page count of 1 (to handle for
+            // example html)
             if (nodeText.length() > 0) {
               nPages = 1;
             }
@@ -362,8 +366,8 @@ public class DOMContentUtils {
           }
           for (int i = 0; i < attrs.getLength(); i++) {
             Node attr = attrs.item(i);
-            if ("name".equalsIgnoreCase(attr.getNodeName()) && 
-                "xmpTPg:NPages".equalsIgnoreCase(attr.getNodeValue())) {
+            if ("name".equalsIgnoreCase(attr.getNodeName())
+                && "xmpTPg:NPages".equalsIgnoreCase(attr.getNodeValue())) {
               if (nPagesStr != null && nPagesStr.length() > 0) {
                 try {
                   nPages = Integer.parseInt(nPagesStr);

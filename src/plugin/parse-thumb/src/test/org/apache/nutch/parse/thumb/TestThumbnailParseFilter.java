@@ -45,19 +45,21 @@ public class TestThumbnailParseFilter {
   }
 
   @Test
-  public void testHtmlThumbCreate()
-      throws IOException, SAXException {
+  public void testHtmlThumbCreate() throws IOException, SAXException {
 
     String url = "https://coherentdigital.net";
     conf.setStrings("parsefilter.thumb.s3bucket", "coherent-images");
-    conf.setStrings("parsefilter.thumb.serviceurl", "https://image.thum.io/get/auth/{auth}/pdfSource/fullpage/width/400/png/noanimate/?url=");
-    conf.setStrings("parsefilter.thumb.credentials","AKIA23B6R4NTDV2KFE65:s6E9FZAVypzEPhdhTtuDR9fektfASVl59UbwqxOF:9343-a2bf76236ec823c6ceaaf37cc591f4c5");
+    conf.setStrings("parsefilter.thumb.serviceurl",
+        "https://image.thum.io/get/auth/{auth}/pdfSource/fullpage/width/400/png/noanimate/?url=");
+    // @TODO: Get the AWS credentials from the env
+    conf.setStrings("parsefilter.thumb.credentials",
+        "AWS_ACCESS_KEY_ID:AWS_SECRET_ACCESS_KEY:9343-a2bf76236ec823c6ceaaf37cc591f4c5");
     conf.setStrings("parsefilter.thumb.s3region", "us-east-2");
     HtmlParseFilter filter = new org.apache.nutch.parse.thumb.ThumbnailParseFilter();
     filter.setConf(conf);
 
-    Content content = new Content(url, url,
-        sb.toString().getBytes("UTF8"), "text/html; charset=UTF-8", new Metadata(), conf);
+    Content content = new Content(url, url, sb.toString().getBytes("UTF8"),
+        "text/html; charset=UTF-8", new Metadata(), conf);
     ParseResult parseResult = new ParseStatus().getEmptyParseResult(url, conf);
 
     HTMLMetaTags metaTags = new HTMLMetaTags();
@@ -65,41 +67,37 @@ public class TestThumbnailParseFilter {
 
     parseResult = filter.filter(content, parseResult, metaTags, node);
 
-    Assert.assertNotNull(
-      "The url must exist in the content",
-      content.getUrl());
-    Assert.assertNotNull(
-      "The parse must exist in the parseResult",
-      parseResult.get(content.getUrl()));
-    Assert.assertNotNull(
-      "The parseData must exist in the parse",
-      parseResult.get(content.getUrl()).getData());
-    Assert.assertNotNull(
-      "The parseMata must exist in the parseData",
-      parseResult.get(content.getUrl()).getData().getParseMeta());
-    String thumbnail = parseResult.get(content.getUrl()).getData().getParseMeta().get("thumbnail"); 
-    Assert.assertNotNull(
-      "The parseMata must contain a thumbnail", thumbnail);
-    Assert.assertTrue(
-      "The thumbnail must have an image URL in the metadata",
-      thumbnail.indexOf(".png") > 0);
+    Assert.assertNotNull("The url must exist in the content", content.getUrl());
+    Assert.assertNotNull("The parse must exist in the parseResult",
+        parseResult.get(content.getUrl()));
+    Assert.assertNotNull("The parseData must exist in the parse",
+        parseResult.get(content.getUrl()).getData());
+    Assert.assertNotNull("The parseMata must exist in the parseData",
+        parseResult.get(content.getUrl()).getData().getParseMeta());
+    String thumbnail = parseResult.get(content.getUrl()).getData()
+        .getParseMeta().get("thumbnail");
+    Assert.assertNotNull("The parseMata must contain a thumbnail", thumbnail);
+    Assert.assertTrue("The thumbnail must have an image URL in the metadata",
+        thumbnail.indexOf(".png") > 0);
   }
 
   @Test
-  public void testPdfThumbCreate()
-      throws IOException, SAXException {
+  public void testPdfThumbCreate() throws IOException, SAXException {
 
     // The MICO VPAT
     String url = "https://d1qq4p6p3fiwyq.cloudfront.net/product-information/Mindscape_VPAT_2.4_13-Jan-2021.pdf";
     conf.setStrings("parsefilter.thumb.s3bucket", "coherent-images");
-    conf.setStrings("parsefilter.thumb.serviceurl", "https://image.thum.io/get/auth/{auth}/pdfSource/fullpage/width/400/png/noanimate/?url=");
-    conf.setStrings("parsefilter.thumb.credentials","AKIA23B6R4NTDV2KFE65:s6E9FZAVypzEPhdhTtuDR9fektfASVl59UbwqxOF:9343-a2bf76236ec823c6ceaaf37cc591f4c5");
+    conf.setStrings("parsefilter.thumb.serviceurl",
+        "https://image.thum.io/get/auth/{auth}/pdfSource/fullpage/width/400/png/noanimate/?url=");
+    // @TODO: Get the AWS credentials from the env
+    conf.setStrings("parsefilter.thumb.credentials",
+        "AWS_ACCESS_KEY_ID:AWS_SECRET_ACCESS_KEY:9343-a2bf76236ec823c6ceaaf37cc591f4c5");
     conf.setStrings("parsefilter.thumb.s3region", "us-east-2");
     HtmlParseFilter filter = new org.apache.nutch.parse.thumb.ThumbnailParseFilter();
     filter.setConf(conf);
 
-    Content content = new Content(url, url,
-      sb.toString().getBytes("UTF8"), "text/html; charset=UTF-8", new Metadata(), conf);
+    Content content = new Content(url, url, sb.toString().getBytes("UTF8"),
+        "text/html; charset=UTF-8", new Metadata(), conf);
 
     ParseResult parseResult = new ParseStatus().getEmptyParseResult(url, conf);
 
@@ -108,41 +106,37 @@ public class TestThumbnailParseFilter {
 
     parseResult = filter.filter(content, parseResult, metaTags, node);
 
-    Assert.assertNotNull(
-      "The url must exist in the content",
-      content.getUrl());
-    Assert.assertNotNull(
-      "The parse must exist in the parseResult",
-      parseResult.get(content.getUrl()));
-    Assert.assertNotNull(
-      "The parseData must exist in the parse",
-      parseResult.get(content.getUrl()).getData());
-    Assert.assertNotNull(
-      "The parseMata must exist in the parseData",
-      parseResult.get(content.getUrl()).getData().getParseMeta());
-    String thumbnail = parseResult.get(content.getUrl()).getData().getParseMeta().get("thumbnail"); 
-    Assert.assertNotNull(
-      "The parseMata must contain a thumbnail", thumbnail);
-    Assert.assertTrue(
-      "The thumbnail must have an image URL in the metadata",
-      thumbnail.indexOf(".png") > 0);
+    Assert.assertNotNull("The url must exist in the content", content.getUrl());
+    Assert.assertNotNull("The parse must exist in the parseResult",
+        parseResult.get(content.getUrl()));
+    Assert.assertNotNull("The parseData must exist in the parse",
+        parseResult.get(content.getUrl()).getData());
+    Assert.assertNotNull("The parseMata must exist in the parseData",
+        parseResult.get(content.getUrl()).getData().getParseMeta());
+    String thumbnail = parseResult.get(content.getUrl()).getData()
+        .getParseMeta().get("thumbnail");
+    Assert.assertNotNull("The parseMata must contain a thumbnail", thumbnail);
+    Assert.assertTrue("The thumbnail must have an image URL in the metadata",
+        thumbnail.indexOf(".png") > 0);
   }
 
   @Ignore("Till later ")
-  public void testThumbAlreadyExists()
-      throws IOException, SAXException {
+  public void testThumbAlreadyExists() throws IOException, SAXException {
 
-	String url = "https:coherentdigital.net";
+    String url = "https:coherentdigital.net";
     conf.setStrings("parsefilter.thumb.s3bucket", "coherent-images");
-    conf.setStrings("parsefilter.thumb.serviceurl", "https://image.thum.io/get/auth/{auth}/{url}");
-    conf.setStrings("parsefilter.thumb.credentials","AKIA23B6R4NTDV2KFE65:s6E9FZAVypzEPhdhTtuDR9fektfASVl59UbwqxOF:9343-a2bf76236ec823c6ceaaf37cc591f4c5");
+    conf.setStrings("parsefilter.thumb.serviceurl",
+        "https://image.thum.io/get/auth/{auth}/{url}");
+    // @TODO: Get the AWS credentials from the env
+    conf.setStrings("parsefilter.thumb.credentials",
+        "AWS_ACCESS_KEY_ID:AWS_SECRET_ACCESS_KEY:9343-a2bf76236ec823c6ceaaf37cc591f4c5");
     conf.setStrings("parsefilter.thumb.s3region", "us-east-2");
-    
+
     HtmlParseFilter filter = new org.apache.nutch.parse.thumb.ThumbnailParseFilter();
     filter.setConf(conf);
 
-    Content content = new Content(url, url,
-        "".getBytes("UTF8"), "text/html; charset=UTF-8", new Metadata(), conf);
+    Content content = new Content(url, url, "".getBytes("UTF8"),
+        "text/html; charset=UTF-8", new Metadata(), conf);
 
     ParseResult parseResult = new ParseStatus().getEmptyParseResult(url, conf);
 
@@ -151,24 +145,19 @@ public class TestThumbnailParseFilter {
 
     parseResult = filter.filter(content, parseResult, metaTags, node);
 
-    Assert.assertNotNull(
-            "The url must exist in the content",
-            content.getUrl());
-    Assert.assertNotNull(
-            "The parse must exist in the parseResult",
-            parseResult.get(content.getUrl()));
-    Assert.assertNotNull(
-            "The parseData must exist in the parse",
-            parseResult.get(content.getUrl()).getData());
-    Assert.assertNotNull(
-            "The parseMata must exist in the parseData",
-            parseResult.get(content.getUrl()).getData().getParseMeta());
-    Assert.assertNotNull(
-            "The thumbnail must exist in the parseMeta",
-            parseResult.get(content.getUrl()).getData().getParseMeta().get("thumbnail"));
+    Assert.assertNotNull("The url must exist in the content", content.getUrl());
+    Assert.assertNotNull("The parse must exist in the parseResult",
+        parseResult.get(content.getUrl()));
+    Assert.assertNotNull("The parseData must exist in the parse",
+        parseResult.get(content.getUrl()).getData());
+    Assert.assertNotNull("The parseMata must exist in the parseData",
+        parseResult.get(content.getUrl()).getData().getParseMeta());
+    Assert.assertNotNull("The thumbnail must exist in the parseMeta",
+        parseResult.get(content.getUrl()).getData().getParseMeta()
+            .get("thumbnail"));
     Assert.assertEquals(
         "The thumbnail must have the correct value in the metadata",
-        "coherentdigital-net/coherentdigital-net.png",
-        parseResult.get(content.getUrl()).getData().getParseMeta().get("thumbnail"));
-  }  
+        "coherentdigital-net/coherentdigital-net.png", parseResult
+            .get(content.getUrl()).getData().getParseMeta().get("thumbnail"));
+  }
 }

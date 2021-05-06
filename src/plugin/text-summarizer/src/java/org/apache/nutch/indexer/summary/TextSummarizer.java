@@ -18,8 +18,8 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 
 /**
- * An {@link org.apache.nutch.indexer.IndexingFilter} that adds
- * a <code>summary</code> field to the document by summarizing the document text.
+ * An {@link org.apache.nutch.indexer.IndexingFilter} that adds a
+ * <code>summary</code> field to the document by summarizing the document text.
  */
 public class TextSummarizer implements IndexingFilter {
 
@@ -49,7 +49,7 @@ public class TextSummarizer implements IndexingFilter {
         summary = summary + values.get(i).toString();
       }
     }
- 
+
     // If its empty, remove it.
     if (summary.length() == 0) {
       summary = null;
@@ -57,7 +57,7 @@ public class TextSummarizer implements IndexingFilter {
       doc.removeField("metatag.description");
       doc.removeField("metatag.twitter:description");
     }
- 
+
     // Generate a summary from the text.
     if (summary == null) {
       // The content to summarize
@@ -74,13 +74,14 @@ public class TextSummarizer implements IndexingFilter {
       String contentType = parse.getData().getMeta(Response.CONTENT_TYPE);
       if ("application/pdf".equals(contentType)) {
         String content = parse.getText();
-	if (content.length() > 4000) {
-          SummaryTool summaryTool = new SummaryTool(StringUtil.cleanField(content));
+        if (content.length() > 4000) {
+          SummaryTool summaryTool = new SummaryTool(
+              StringUtil.cleanField(content));
           String heading = summaryTool.extractHeading();
-	  if (heading != null) {
-             doc.add("heading", heading);
-	  }
-	}
+          if (heading != null) {
+            doc.add("heading", heading);
+          }
+        }
       }
     }
 
@@ -88,10 +89,11 @@ public class TextSummarizer implements IndexingFilter {
     NutchField contentLengthField = doc.getField("contentLength");
     if (contentLengthField == null && parse.getText().length() > 0) {
       int contentLength = parse.getText().length();
-      doc.add("contentLength", new Integer(contentLength));
+      doc.add("contentLength", Integer.valueOf(contentLength));
     }
 
-    // Compute other field lengths so they can be used in record selection during curation. 
+    // Compute other field lengths so they can be used in record selection
+    // during curation.
     int titleLength = 0;
     if (doc.getField("title") != null) {
       StringBuffer sb = new StringBuffer();
@@ -101,7 +103,7 @@ public class TextSummarizer implements IndexingFilter {
       }
       titleLength = sb.toString().length();
     }
-    doc.add("titleLength", new Integer(titleLength));
+    doc.add("titleLength", Integer.valueOf(titleLength));
 
     int headingLength = 0;
     if (doc.getField("heading") != null) {
@@ -112,7 +114,7 @@ public class TextSummarizer implements IndexingFilter {
       }
       headingLength = sb.toString().length();
     }
-    doc.add("headingLength", new Integer(headingLength));
+    doc.add("headingLength", Integer.valueOf(headingLength));
 
     int anchorLength = 0;
     if (doc.getField("anchor") != null) {
@@ -123,7 +125,7 @@ public class TextSummarizer implements IndexingFilter {
       }
       anchorLength = sb.toString().length();
     }
-    doc.add("anchorLength", new Integer(anchorLength));
+    doc.add("anchorLength", Integer.valueOf(anchorLength));
 
     return doc;
   }

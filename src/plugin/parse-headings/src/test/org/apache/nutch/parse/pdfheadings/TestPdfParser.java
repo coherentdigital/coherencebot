@@ -34,7 +34,7 @@ public class TestPdfParser extends HeadingParserTest {
 
   @Test
   public void testHeadings() throws ProtocolException, ParseException {
-	Metadata md = getHeadingParseMeta("NutchHeadingTest.pdf");
+    Metadata md = getHeadingParseMeta("NutchHeadingTest.pdf");
     String text = md.get("heading");
     String pages = md.get("pages");
     Assert.assertNotNull("No text returned", text);
@@ -46,7 +46,7 @@ public class TestPdfParser extends HeadingParserTest {
 
   @Test
   public void testSmallHeadings() throws ProtocolException, ParseException {
-	Metadata md = getHeadingParseMeta("hespi.pdf");
+    Metadata md = getHeadingParseMeta("hespi.pdf");
     String text = md.get("heading");
     String pages = md.get("pages");
     Assert.assertNotNull("No text returned", text);

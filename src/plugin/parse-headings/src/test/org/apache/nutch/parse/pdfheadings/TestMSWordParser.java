@@ -29,7 +29,8 @@ public class TestMSWordParser extends HeadingParserTest {
 
   // Make sure sample files are copied to "test.data" as specified in
   // ./src/plugin/parse-tika/build.xml during plugin compilation.
-  private String[] sampleFiles = { "NutchHeadingTest.doc", "NutchHeadingTest.docx" };
+  private String[] sampleFiles = { "NutchHeadingTest.doc",
+      "NutchHeadingTest.docx" };
 
   private String expectedText = "Heading Level One";
 
@@ -43,8 +44,7 @@ public class TestMSWordParser extends HeadingParserTest {
       Assert.assertNotNull("No pages returned", pages);
       Assert.assertTrue("text found : '" + text + "'",
           text.indexOf(expectedText) > -1);
-      Assert.assertTrue("pages found : '" + pages + "'",
-          "1".equals(pages));
+      Assert.assertTrue("pages found : '" + pages + "'", "1".equals(pages));
     }
   }
 }

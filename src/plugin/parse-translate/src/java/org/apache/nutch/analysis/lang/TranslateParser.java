@@ -19,17 +19,13 @@ package org.apache.nutch.analysis.lang;
 import java.lang.invoke.MethodHandles;
 import java.lang.StringBuilder;
 import java.util.ArrayList;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Properties;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.nutch.metadata.Metadata;
-import org.apache.nutch.net.protocols.Response;
 import org.apache.nutch.parse.HTMLMetaTags;
 import org.apache.nutch.parse.HtmlParseFilter;
 import org.apache.nutch.parse.Parse;
@@ -41,13 +37,11 @@ import org.w3c.dom.DocumentFragment;
 
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.translate.AmazonTranslate;
 import com.amazonaws.services.translate.AmazonTranslateClient;
 import com.amazonaws.services.translate.model.TranslateTextRequest;
 import com.amazonaws.services.translate.model.TranslateTextResult;
-
 
 public class TranslateParser implements HtmlParseFilter {
 
@@ -82,33 +76,34 @@ public class TranslateParser implements HtmlParseFilter {
       return parseResult;
     }
 
-    ArrayList<String> targetFields = new ArrayList();
+    ArrayList<String> targetFields = new ArrayList<String>();
     StringBuilder textBuilder = new StringBuilder();
-    Iterator it = FIELD_MAP.entrySet().iterator();
+    Iterator<Entry<String, String>> it = FIELD_MAP.entrySet().iterator();
 
-    // Translate handles unstructured text. Since we may have more than one field
+    // Translate handles unstructured text. Since we may have more than one
+    // field
     // to translate, we put each on their own line.
     while (it.hasNext()) {
-        Map.Entry<String, String> pair = (Map.Entry)it.next();
-        String sourceField = pair.getKey();
-	String targetField = pair.getValue();
+      Map.Entry<String, String> pair = (Entry<String, String>) it.next();
+      String sourceField = pair.getKey();
+      String targetField = pair.getValue();
 
-	// Check both parseMeta and HTMLMeta for the source field.
-	String sourceText = parseMeta.get(sourceField);
-	if (sourceText == null) {
-          sourceText = metaTags.getGeneralTags().get(sourceField);
-	}
-	// Check if title is to be translated.
-	if (sourceText == null && "title".equals(sourceField)) {
-          sourceText = parse.getData().getTitle();
-	}
-	// Add the source field to the translate input.
-        // Each field is on its own line.
-	if (sourceText != null && sourceText.trim().length() > 0) {
-	  textBuilder.append(sourceText.trim().replace("\n", " "));
-	  textBuilder.append("\n");
-	  targetFields.add(targetField);
-	}
+      // Check both parseMeta and HTMLMeta for the source field.
+      String sourceText = parseMeta.get(sourceField);
+      if (sourceText == null) {
+        sourceText = metaTags.getGeneralTags().get(sourceField);
+      }
+      // Check if title is to be translated.
+      if (sourceText == null && "title".equals(sourceField)) {
+        sourceText = parse.getData().getTitle();
+      }
+      // Add the source field to the translate input.
+      // Each field is on its own line.
+      if (sourceText != null && sourceText.trim().length() > 0) {
+        textBuilder.append(sourceText.trim().replace("\n", " "));
+        textBuilder.append("\n");
+        targetFields.add(targetField);
+      }
     }
 
     // We translate all inputs at once to reduce the number of calls.
@@ -122,11 +117,13 @@ public class TranslateParser implements HtmlParseFilter {
         String[] sourceFields = sourceText.split("\n");
         String[] translatedFields = translatedText.split("\n");
         for (int i = 0; i < translatedFields.length; i++) {
-          String targetField = (i < targetFields.size()) ? targetFields.get(i) : "unknown";
-	  // If the translation resulted in the same text, don't save the translation.
-	  if (translatedFields[i].equals(sourceFields[i])) {
+          String targetField = (i < targetFields.size()) ? targetFields.get(i)
+              : "unknown";
+          // If the translation resulted in the same text, don't save the
+          // translation.
+          if (translatedFields[i].equals(sourceFields[i])) {
             continue;
-	  }
+          }
           parseMeta.set(targetField, translatedFields[i]);
         }
       }
@@ -138,12 +135,12 @@ public class TranslateParser implements HtmlParseFilter {
   /**
    * Translate Text using AWS Translate.
    */
-  private String translateText(String sourceLang, String targetLang, String text) {
+  private String translateText(String sourceLang, String targetLang,
+      String text) {
     try {
-      TranslateTextRequest request = new TranslateTextRequest()
-        .withText(text)
-        .withSourceLanguageCode(sourceLang)
-        .withTargetLanguageCode(targetLang);
+      TranslateTextRequest request = new TranslateTextRequest().withText(text)
+          .withSourceLanguageCode(sourceLang)
+          .withTargetLanguageCode(targetLang);
       TranslateTextResult result = translateClient.translateText(request);
       return result.getTranslatedText();
     } catch (Exception e) {
@@ -157,16 +154,16 @@ public class TranslateParser implements HtmlParseFilter {
     this.conf = conf;
 
     contentMaxLength = conf.getInt("parse.translate.max.length", 5000);
-  
+
     targetLang = conf.get("parse.translate.targetlang", "en");
-    String[] fields  = conf.getStrings("parse.translate.fields");
+    String[] fields = conf.getStrings("parse.translate.fields");
     for (int i = 0; i < fields.length; i++) {
       String field = fields[i];
       if (field.length() > 0) {
         String[] parts = field.split("=");
-	if (parts.length == 2) {
-           FIELD_MAP.put(parts[0], parts[1]);
-	}
+        if (parts.length == 2) {
+          FIELD_MAP.put(parts[0], parts[1]);
+        }
       }
     }
 
@@ -174,35 +171,35 @@ public class TranslateParser implements HtmlParseFilter {
       LOG.error("No fields for translation. Check lang.translate.fields");
     }
 
-    String awsRegionString = conf.getTrimmed("parse.translate.awsregion", "us-east-2");
+    String awsRegionString = conf.getTrimmed("parse.translate.awsregion",
+        "us-east-2");
     // Check that the config has the credentials.
     String credentials = conf.getTrimmed("parse.translate.credentials");
     if (credentials == null) {
-      String message = "Set AWS_ACCESS_KEY_ID:AWS_SECRET_ACCESS_KEY in config element parse.translate.credentials. " +
-        " This allows using AWS Translate to translate field content.";
+      String message = "Set AWS_ACCESS_KEY_ID:AWS_SECRET_ACCESS_KEY in config element parse.translate.credentials. "
+          + " This allows using AWS Translate to translate field content.";
       LOG.error(message);
     } else {
-      String[] credParts = credentials.split(":",2);
+      String[] credParts = credentials.split(":", 2);
       if (credParts.length != 2) {
-        String message = "Set AWS_ACCESS_KEY_ID:AWS_SECRET_ACCESS_KEY in config element parse.translate.credentials. " +
-          " This allows using AWS Translate to translate field content.";
+        String message = "Set AWS_ACCESS_KEY_ID:AWS_SECRET_ACCESS_KEY in config element parse.translate.credentials. "
+            + " This allows using AWS Translate to translate field content.";
         LOG.error(message);
       } else {
         String awsAccessKeyId = credParts[0];
         String awsSecretAccessKey = credParts[1];
 
-	try {
-          BasicAWSCredentials awsCreds =
-            new BasicAWSCredentials(awsAccessKeyId, awsSecretAccessKey);
+        try {
+          BasicAWSCredentials awsCreds = new BasicAWSCredentials(awsAccessKeyId,
+              awsSecretAccessKey);
 
-          translateClient =
-            AmazonTranslateClient.builder()
+          translateClient = AmazonTranslateClient.builder()
               .withCredentials(new AWSStaticCredentialsProvider(awsCreds))
-              .withRegion(Regions.fromName(awsRegionString))
-              .build();
-	} catch (Exception e) {
-	  LOG.error("Unable to initialize AWS Translate Client. " + e.toString());
-	}
+              .withRegion(Regions.fromName(awsRegionString)).build();
+        } catch (Exception e) {
+          LOG.error(
+              "Unable to initialize AWS Translate Client. " + e.toString());
+        }
       }
     }
   }

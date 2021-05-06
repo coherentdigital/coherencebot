@@ -76,9 +76,9 @@ public class LanguageIndexingFilter implements IndexingFilter {
     }
 
     if (!indexLangs.isEmpty() && !indexLangs.contains(lang)) {
-    	return null;
+      return null;
     }
-    
+
     doc.add("lang", lang);
 
     return doc;
@@ -86,7 +86,8 @@ public class LanguageIndexingFilter implements IndexingFilter {
 
   public void setConf(Configuration conf) {
     this.conf = conf;
-    indexLangs = new HashSet<>(conf.getStringCollection("lang.index.languages"));
+    indexLangs = new HashSet<>(
+        conf.getStringCollection("lang.index.languages"));
   }
 
   public Configuration getConf() {

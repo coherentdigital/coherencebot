@@ -60,9 +60,9 @@ class DOMBuilder implements ContentHandler, LexicalHandler {
   protected Stack<Element> m_elemStack = new Stack<Element>();
 
   /**
-  * Element recorded with this namespace will be converted to Node without a
-  * namespace
-  */
+   * Element recorded with this namespace will be converted to Node without a
+   * namespace
+   */
   private String defaultNamespaceURI = null;
 
   /**
@@ -142,7 +142,7 @@ class DOMBuilder implements ContentHandler, LexicalHandler {
 
     Node currentNode = m_currentNode;
 
-    //System.out.println(newNode.getNodeName());
+    // System.out.println(newNode.getNodeName());
     if (null != currentNode) {
       currentNode.appendChild(newNode);
 
@@ -299,7 +299,8 @@ class DOMBuilder implements ContentHandler, LexicalHandler {
           if ("".equals(attrNS))
             attrNS = null; // DOM represents no-namespace as null
 
-          // System.out.println("attrNS: "+attrNS+", localName: "+atts.getQName(i)
+          // System.out.println("attrNS: "+attrNS+", localName:
+          // "+atts.getQName(i)
           // +", qname: "+atts.getQName(i)+", value: "+atts.getValue(i));
           // Crimson won't let us set an xmlns: attribute on the DOM.
           String attrQName = atts.getQName(i);
@@ -539,9 +540,9 @@ class DOMBuilder implements ContentHandler, LexicalHandler {
    * @return true if the current node is outside the document element.
    */
   private boolean isOutsideDocElem() {
-    return (null == m_docFrag)
-        && m_elemStack.size() == 0
-        && (null == m_currentNode || m_currentNode.getNodeType() == Node.DOCUMENT_NODE);
+    return (null == m_docFrag) && m_elemStack.size() == 0
+        && (null == m_currentNode
+            || m_currentNode.getNodeType() == Node.DOCUMENT_NODE);
   }
 
   /**
@@ -783,7 +784,7 @@ class DOMBuilder implements ContentHandler, LexicalHandler {
   public void setUpperCaseElementNames(boolean upperCaseElementNames) {
     this.upperCaseElementNames = upperCaseElementNames;
   }
- 
+
   public String getDefaultNamespaceURI() {
     return defaultNamespaceURI;
   }

@@ -33,7 +33,7 @@ public class TestRTFParser extends HeadingParserTest {
   private String expectedHeadingText = "Heading Level One";
 
   public void testIt() throws ProtocolException, ParseException {
-	Metadata md = getHeadingParseMeta("NutchHeadingTest.rtf");
+    Metadata md = getHeadingParseMeta("NutchHeadingTest.rtf");
     String text = md.get("heading");
     String pages = md.get("pages");
     int index = text.indexOf(expectedHeadingText);
