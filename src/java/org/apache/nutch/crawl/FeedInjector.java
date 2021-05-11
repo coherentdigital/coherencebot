@@ -467,7 +467,7 @@ public class FeedInjector extends NutchTool implements Tool {
 
         // Setup for the next page of results.
         seedFeedUrl = null;
-        if (jo.has("next")) {
+        if (jo.has("next") && !jo.isNull("next")) {
           try {
             seedFeedUrl = new URL(jo.getString("next"));
           } catch (MalformedURLException mue) {

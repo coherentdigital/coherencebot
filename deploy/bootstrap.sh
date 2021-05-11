@@ -29,6 +29,7 @@ cd coherencebot
 aws s3 cp s3://coherencebot/deploy/coherencebot.tar.gz .
 tar -xvzf coherencebot.tar.gz
 aws s3 cp --recursive s3://coherencebot/deploy/conf/ conf
+cp conf/nutch-site-$COHERENCEBOT_REGION.xml conf/nutch-site.xml
 if command -v ant ; then
     echo "Ant available" > /tmp/install-results.txt
 	ant clean runtime
