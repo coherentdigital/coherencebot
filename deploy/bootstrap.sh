@@ -15,6 +15,12 @@ sudo yum install -y java-1.8.0-amazon-corretto-devel
 # Install ANT
 sudo yum install -y ant
 
+# Make a log dir for CoherenceBot
+sudo mkdir -p /var/log/coherencebot
+sudo chown hadoop:hadoop coherencebot
+# Setup Log Rotation
+sudo aws s3 cp s3://coherencebot/deploy/coherencebotlog /etc/logrotate.d/
+
 # Copy down the coherencebot repo export from S3. Untar it, and build it.
 cd /mnt/
 mkdir -p coherencebot

@@ -610,6 +610,43 @@
 </property>
 
 <property>
+    <name>crawldb.inject.feed.endpoint</name>
+    <value></value>
+    <description>
+    The URL of an API that is queried to obtain new URLs to crawl.
+    It is expected to return a JSON Object like this:
+    {"count":n, "next":"url", "results": [{"url":"seedurl", ...}, ...]}
+    where the next URL is a way to get paginated results.
+    and the results array is an object parsed for "url" and
+    other metadata as indicated by crawldb.inject.feed.md
+    </description>
+</property>
+
+<property>
+    <name>crawldb.inject.feed.params</name>
+    <value></value>
+    <description>
+    The URL parameters of the API that is queried to obtain new URLs to crawl.
+    </description>
+</property>
+
+<property>
+    <name>crawldb.inject.feed.x-api-key</name>
+    <value></value>
+    <description>
+    The X-API-KEY header for the injector feed endpoint.
+    </description>
+</property>
+
+<property>
+    <name>crawldb.inject.feed.md</name>
+    <value></value>
+    <description>
+    Comma separated list of json keys to store as metadata along with the url
+    </description>
+</property>
+
+<property>
   <name>db.update.max.inlinks</name>
   <value>10000</value>
   <description>Maximum number of inlinks to take into account when updating 

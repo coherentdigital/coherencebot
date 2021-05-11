@@ -67,6 +67,7 @@ if [ $# = 0 ]; then
   echo "  mergedb           merge crawldb-s, with optional filtering"
   echo "  readlinkdb        read / dump link db"
   echo "  inject            inject new urls into the database"
+  echo "  feedinject        inject new urls from an API into the database"
   echo "  generate          generate new segments to fetch from crawl db"
   echo "  freegen           generate new segments to fetch from text files"
   echo "  fetch             fetch a segment's pages"
@@ -225,6 +226,8 @@ if [ "$COMMAND" = "crawl" ] ; then
   exit -1
 elif [ "$COMMAND" = "inject" ] ; then
   CLASS=org.apache.nutch.crawl.Injector
+elif [ "$COMMAND" = "feedinject" ] ; then
+  CLASS=org.apache.nutch.crawl.FeedInjector
 elif [ "$COMMAND" = "generate" ] ; then
   CLASS=org.apache.nutch.crawl.Generator
 elif [ "$COMMAND" = "freegen" ] ; then
