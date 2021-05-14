@@ -157,4 +157,20 @@
       <remove />
     </mapping>
   </writer>
+  <writer id="indexer_s3_1" class="org.apache.nutch.indexwriter.s3.S3IndexWriter">
+    <parameters>
+      <param name="bucket" value=""/>
+      <param name="region" value=""/>
+      <param name="folder" value=""/>
+      <param name="aws_access_key_id" value=""/>
+      <param name="aws_secret_access_key" value=""/>
+    </parameters>
+    <mapping>
+      <copy>
+        <!--field source="title" dest="title,search"/-->
+      </copy>
+      <rename />
+      <remove />
+    </mapping>
+  </writer>
 </writers>

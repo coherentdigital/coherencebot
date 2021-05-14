@@ -451,8 +451,8 @@ public class FeedInjector extends NutchTool implements Tool {
               if (seedUrl != null && collectionId != null
                   && collectionTitle != null && collectionOrgId != null) {
                 // We have all the metadata
-                String seedFileLine = seedUrl + "\ttitle=" + collectionTitle
-                    + "\tslug=" + collectionId + "\torg.slug="
+                String seedFileLine = seedUrl + "\tcollection.title=" + collectionTitle
+                    + "\tcollection.slug=" + collectionId + "\torg.slug="
                     + collectionOrgId;
                 seedUrls.add(seedFileLine);
               } else {

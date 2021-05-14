@@ -57,6 +57,7 @@
     <ant dir="indexer-elastic" target="deploy"/>
     <ant dir="indexer-kafka" target="deploy"/>
     <ant dir="indexer-rabbit" target="deploy"/>
+    <ant dir="indexer-s3" target="deploy"/>
     <ant dir="indexer-solr" target="deploy"/>
     <ant dir="language-identifier" target="deploy"/>
     <ant dir="microformats-reltag" target="deploy"/>
@@ -210,6 +211,7 @@
     <ant dir="indexer-elastic" target="clean"/>
     <ant dir="indexer-kafka" target="clean"/>
     <ant dir="indexer-rabbit" target="clean"/>
+    <ant dir="indexer-s3" target="clean"/>
     <ant dir="indexer-solr" target="clean"/>
     <ant dir="language-identifier" target="clean"/>
     <ant dir="lib-htmlunit" target="clean"/>
