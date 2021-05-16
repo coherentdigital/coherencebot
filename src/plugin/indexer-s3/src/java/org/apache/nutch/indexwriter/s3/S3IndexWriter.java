@@ -17,9 +17,14 @@
 package org.apache.nutch.indexwriter.s3;
 
 import java.lang.invoke.MethodHandles;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.time.format.DateTimeFormatter;
+import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -28,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.nutch.indexer.IndexWriter;
@@ -63,6 +69,9 @@ public class S3IndexWriter implements IndexWriter {
   private String s3RegionString;
   private String awsAccessKeyId;
   private String awsSecretAccessKey;
+  private String template;
+  private String validator;
+  private String s3InvalidFolder;
   private AmazonS3 s3 = null;
 
   @Override
@@ -83,7 +92,7 @@ public class S3IndexWriter implements IndexWriter {
 
     s3Bucket = parameters.get(S3Constants.BUCKET);
     if (StringUtils.isBlank(s3Bucket)) {
-      String message = "Missing s3 bucket this should be set in index-writers.xml ";
+      String message = "Missing s3 bucket.  This should be set in index-writers.xml ";
       message += "\n" + describe();
       LOG.error(message);
       throw new RuntimeException(message);
@@ -91,7 +100,7 @@ public class S3IndexWriter implements IndexWriter {
 
     s3RegionString = parameters.get(S3Constants.REGION);
     if (StringUtils.isBlank(s3RegionString)) {
-      String message = "Missing s3 region this should be set in index-writers.xml ";
+      String message = "Missing s3 region. This should be set in index-writers.xml ";
       message += "\n" + describe();
       LOG.error(message);
       throw new RuntimeException(message);
@@ -99,15 +108,26 @@ public class S3IndexWriter implements IndexWriter {
 
     s3Folder = parameters.get(S3Constants.FOLDER);
     if (StringUtils.isBlank(s3Folder)) {
-      String message = "Missing s3 folder this should be set in index-writers.xml ";
+      String message = "Missing s3 folder. This should be set in index-writers.xml ";
       message += "\n" + describe();
       LOG.error(message);
       throw new RuntimeException(message);
     }
 
+    template = parameters.get(S3Constants.TEMPLATE);
+    if (StringUtils.isBlank(template)) {
+      String message = "Missing JSON template. This should be set in index-writers.xml ";
+      message += "\n" + describe();
+      LOG.error(message);
+      throw new RuntimeException(message);
+    }
+
+    validator = parameters.get(S3Constants.VALIDATOR);
+    s3InvalidFolder = parameters.get(S3Constants.INVALID_FOLDER);
+
     awsAccessKeyId = parameters.get(S3Constants.AWS_ACCESS_KEY_ID);
     if (StringUtils.isBlank(awsAccessKeyId)) {
-      String message = "Missing s3 aws_access_key_id this should be set in index-writers.xml ";
+      String message = "Missing s3 aws_access_key_id. This should be set in index-writers.xml ";
       message += "\n" + describe();
       LOG.error(message);
       throw new RuntimeException(message);
@@ -115,7 +135,7 @@ public class S3IndexWriter implements IndexWriter {
 
     awsSecretAccessKey = parameters.get(S3Constants.AWS_SECRET_ACCESS_KEY);
     if (StringUtils.isBlank(awsSecretAccessKey)) {
-      String message = "Missing s3 aws_secret_access_key this should be set in index-writers.xml ";
+      String message = "Missing s3 aws_secret_access_key. This should be set in index-writers.xml ";
       message += "\n" + describe();
       LOG.error(message);
       throw new RuntimeException(message);
@@ -342,12 +362,59 @@ public class S3IndexWriter implements IndexWriter {
     return jReturn;
   }
 
+  /**
+   * Validate a JSON object using the validation endpoint.
+   *
+   * @param json
+   * @return "OK" if valid, otherwise a message indicating the invalidating condition.
+   */
+  private String validate( String json ) {
+    String validatorResponse = "OK";
+    try {
+      URL url = new URL(validator);
+      HttpURLConnection con = null;
+      con = (HttpURLConnection) url.openConnection();
+      con.setRequestMethod("POST");
+      con.setRequestProperty("Content-Type", "application/json; utf-8");
+      con.setRequestProperty("Accept", "*/*");
+      con.setConnectTimeout(10000);
+      con.setReadTimeout(60000);
+      con.setDoInput(true);
+      con.setDoOutput(true);
+
+      // POST the JSON to the validator
+      OutputStream os = con.getOutputStream();
+      os.write(json.getBytes("UTF-8"));
+      os.flush();
+      os.close();
+
+      int responseCode = con.getResponseCode();
+      String responseStr = "";
+      if(responseCode != 200) {
+        InputStream in = new BufferedInputStream(con.getErrorStream());
+        responseStr = IOUtils.toString(in, "UTF-8");
+        in.close();
+      } else {
+        // Read the validator response into a string
+        InputStream in = new BufferedInputStream(con.getInputStream());
+        responseStr = IOUtils.toString(in, "UTF-8");
+        in.close();
+      }
+      con.disconnect();
+      if (responseStr.indexOf("OK") == -1) {
+        validatorResponse = responseStr;
+      }
+    } catch (Exception e) {
+      LOG.error("Unable to validate using " + validator, e);
+    }
+    return validatorResponse;
+  }
+
   @Override
   public void write(NutchDocument doc) throws IOException {
 
-    String template = "{\"collection\":{\"title\":\"\",\"slug\":\"\",\"organization\":\"\"},\"harvest\":{\"id\":\"uuid\",\"date\":\"\"},\"artifacts\":[{\"id\":\"uuid\",\"uri\":\"\",\"title\":\"\",\"identifier\":\"\",\"date_updated\":\"\",\"date_published\":\"\",\"publisher\":\"\",\"publication_place\":\"\",\"summary\":\"\",\"type\":\"\",\"authors\":[{\"name\":\"\"}],\"languages\":[],\"thumbnail\":{\"url\":\"\"},\"full_text\":\"\",\"files\":[{\"url\":\"\",\"size\":0,\"media_type\":\"\"}],\"hidden_props\":[{\"key\":\"title_algorithm\",\"value\":\"\"},{\"key\":\"anchor\",\"value\":\"\"},{\"key\":\"heading\",\"value\":\"\"},{\"key\":\"segment\",\"value\":\"\"},{\"key\":\"host\",\"value\":\"\"},{\"key\":\"domain\",\"value\":\"\"},{\"key\":\"anchorLength\",\"value\":0},{\"key\":\"headingLength\",\"value\":0},{\"key\":\"titleLength\",\"value\":0},{\"key\":\"depth\",\"value\":0}],\"props\":[{\"key\":\"Pages\",\"value\":0}]}]}";
     UUID uuid = UUID.randomUUID();
-    template = template.replace("uuid", uuid.toString());
+    template = template.replace("randomuuid", uuid.toString());
     // Collection UUID _ artifact UUID.json (for meta)
     // Collection UUID _ artifact UUID.txt (for full text)
 
@@ -356,14 +423,39 @@ public class S3IndexWriter implements IndexWriter {
       collectionId = "unknown-collection";
     }
 
+    // If there's a field with the name 'uuid_seed'; we use it to generate a UUID
+    // In this way we can convert the NutchDoc's ID to a UUID
+    String uuidSeed = (String)doc.getFieldValue("uuid_seed");
+    if (uuidSeed != null && uuidSeed.length() > 0) {
+      uuid = UUID.nameUUIDFromBytes(uuidSeed.getBytes());
+      template = template.replace("uuid", uuid.toString());
+      doc.removeField("uuid_seed");
+    }
+
+    // If the NutchDoc contains a field 'full_text_file', it is written
+    // to its own text/plain .txt with the same UUID as the metadata
+    String fullText = null;
+    Object fullTextObj = doc.getFieldValue("full_text_file");
+    if (fullTextObj != null) {
+      if (fullTextObj instanceof String) {
+        fullText = (String) fullTextObj;
+        fullText = fullText.trim();
+      } else {
+        LOG.warn("full_text_file is not a String.  Will not be saved to text/plain");
+      }
+      // The field is removed so it does not get added to the JSON.
+      doc.removeField("full_text_file");
+      // Writing of the file is deferred until below; after we have validated the JSON.
+    }
+
     // Add each field of this Nutch doc to a JSON representation according to the
     // template.
-    // NutchDocuments are flat key=value, or key=array, but the Commons schema is nested.
+    // NutchDocuments are flat key=value, or key=array, but the template schema may be nested.
     // So this section of code builds a nested object from a template with empty values.
     // It then hydrates it by finding the object with the desired path in the template
     // and then pasting in the value from the flat NutchDocument.
     //
-    // Field names in the NutchDocument have been mapped to a Commons schema
+    // Field names in the NutchDocument have been mapped to the template schema
     // field.
     //
     // The field names in the NutchDocument use a dot notation to indicate their output path. 
@@ -386,7 +478,7 @@ public class S3IndexWriter implements IndexWriter {
             objKey = "value";
           }
           final List<Object> values = e.getValue().getValues();
-          // It the NutchDocument field single-valued or multi-valued?
+          // Is the NutchDocument field single-valued or multi-valued?
           if (values.size() > 1) {
             // If the matched output is an array, append to it.
             if (elem instanceof JSONArray) {
@@ -406,7 +498,7 @@ public class S3IndexWriter implements IndexWriter {
                 }
                 jo.put(objKey, al);
               } else {
-                LOG.warn("Attempt to put multi-valued Nutch field into a scalar Commons attribute: " + key + " into " + objKey + ", saving first elem only.");
+                LOG.warn("Attempt to put a multi-valued Nutch field into a scalar attribute: " + key + " into " + objKey + ", saving first elem only.");
                 jo.put(objKey, values.get(0));
               }
             }
@@ -450,23 +542,66 @@ public class S3IndexWriter implements IndexWriter {
         }
       }
 
-
-      // Go through the template doc and remove any empty fields
+      // Go through the hydrated doc and remove any empty fields.
       jDoc = clean(jDoc);
 
       String jsonString = jDoc.toString(2);
-      // LOG.info("Writing json " + jsonString);
+
+      // Call the validator on the JSON if provided.
+      String validationMessage = "OK";
+      if (validator != null) {
+        validationMessage = validate(jsonString);
+      }
+
       ObjectMetadata s3Meta = new ObjectMetadata();
       s3Meta.setContentType("application/json");
-      String s3Key = s3Folder + "/" + collectionId + "-" + uuid.toString()
-          + ".json";
-      LOG.info("key: " + s3Key);
-      byte[] contentAsBytes = jsonString.getBytes("UTF-8");
-      ByteArrayInputStream contentsAsStream = new ByteArrayInputStream(
-          contentAsBytes);
-      s3Meta.setContentLength(contentAsBytes.length);
-      s3.putObject(
-          new PutObjectRequest(s3Bucket, s3Key, contentsAsStream, s3Meta));
+      if ("OK".equals(validationMessage)) {
+        String s3Key = s3Folder + "/" + collectionId + "-" + uuid.toString()
+            + ".json";
+        byte[] contentAsBytes = jsonString.getBytes("UTF-8");
+        ByteArrayInputStream contentsAsStream = new ByteArrayInputStream(
+            contentAsBytes);
+        s3Meta.setContentLength(contentAsBytes.length);
+        s3.putObject(
+            new PutObjectRequest(s3Bucket, s3Key, contentsAsStream, s3Meta));
+
+        // If we parsed out a full_text_file, write that out.
+        if (fullText != null) {
+          if (fullText.length() > 0) {
+            s3Meta.setContentType("text/plain");
+            s3Key = s3Folder + "/" + collectionId + "-" + uuid.toString()
+                + ".txt";
+            contentAsBytes = fullText.getBytes("UTF-8");
+            contentsAsStream = new ByteArrayInputStream(
+                contentAsBytes);
+            s3Meta.setContentLength(contentAsBytes.length);
+            s3.putObject(
+                new PutObjectRequest(s3Bucket, s3Key, contentsAsStream, s3Meta));
+          } else {
+            LOG.warn("NutchField full_text_file is an empty String; Not writing to output");
+          }
+        }
+
+      } else {
+        // The JSON failed validation.
+        LOG.error("UUID:" + uuid.toString() + ", " + validationMessage);
+        if (s3InvalidFolder != null) {
+          Object validationObj = (Object) validationMessage;
+          if (validationMessage.startsWith("{")) {
+            validationObj = new JSONObject(validationMessage);
+          }
+          jDoc.put("validation_message", validationObj);
+          jsonString = jDoc.toString(2);
+          String s3Key = s3InvalidFolder + "/" + collectionId + "-" + uuid.toString()
+              + ".json";
+          byte[] contentAsBytes = jsonString.getBytes("UTF-8");
+          ByteArrayInputStream contentsAsStream = new ByteArrayInputStream(
+              contentAsBytes);
+          s3Meta.setContentLength(contentAsBytes.length);
+          s3.putObject(
+              new PutObjectRequest(s3Bucket, s3Key, contentsAsStream, s3Meta));
+        }
+      }
     } catch (JSONException e1) {
       LOG.error(e1.getMessage(), e1);
     } catch (AmazonServiceException e) {
@@ -512,14 +647,23 @@ public class S3IndexWriter implements IndexWriter {
     properties.put(S3Constants.REGION,
         new AbstractMap.SimpleEntry<>("The AWS region of the bucket",
             this.s3RegionString == null ? "" : this.s3RegionString));
+    properties.put(S3Constants.VALIDATOR,
+        new AbstractMap.SimpleEntry<>("The validation endpoint",
+            this.validator == null ? "" : this.validator));
+    properties.put(S3Constants.INVALID_FOLDER,
+        new AbstractMap.SimpleEntry<>("The S3 folfer to store invalid results in",
+            this.s3InvalidFolder == null ? "" : this.s3InvalidFolder));
     properties.put(S3Constants.AWS_ACCESS_KEY_ID,
         new AbstractMap.SimpleEntry<>(
             "The AWS Access Key ID for accessing the bucket",
-            this.awsAccessKeyId == null ? "" : this.awsAccessKeyId));
+            this.awsAccessKeyId == null ? "" : "****" + this.awsAccessKeyId.substring(awsAccessKeyId.length() - 4)));
     properties.put(S3Constants.AWS_SECRET_ACCESS_KEY,
         new AbstractMap.SimpleEntry<>(
             "The AWS Secret Access Key credentials for accessing the bucket",
-            this.awsSecretAccessKey == null ? "" : this.awsSecretAccessKey));
+            this.awsSecretAccessKey == null ? "" : "****" + this.awsSecretAccessKey.substring(awsSecretAccessKey.length() - 4)));
+    properties.put(S3Constants.TEMPLATE,
+        new AbstractMap.SimpleEntry<>("The JSON template for the constructed doc",
+            this.template == null ? "" : this.template));
 
     return properties;
   }
