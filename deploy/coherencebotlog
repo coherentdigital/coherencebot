@@ -1,0 +1,12 @@
+/var/log/coherencebot/coherencebot.log
+{
+    missingok
+    notifempty
+    nocreate
+    daily
+    copytruncate
+    rotate 7
+    postrotate
+        aws s3 cp /var/log/coherencebot/coherencebot.log-* s3://coherencebot/logs/${AWS_DEFAULT_REGION}/
+    endscript
+}
