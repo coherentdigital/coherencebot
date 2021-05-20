@@ -195,6 +195,7 @@ public class ThumbnailParseFilter implements HtmlParseFilter {
 
               // Save the thumbnail URL in the parseMeta
               parse.getData().getParseMeta().set("thumbnail", thumbnailUrl);
+              // TODO: save the S3 URL in thumnail.url_archive 
             } else {
               LOG.debug("Thumbnail returned is zero bytes for " + serviceUrl);
             }
@@ -229,6 +230,7 @@ public class ThumbnailParseFilter implements HtmlParseFilter {
       String message = "Set AWS_ACCESS_KEY_ID:AWS_SECRET_ACCESS_KEY:THUMBIO_APIKEY in config element parserfilter.thumb.credentials. "
           + " This allows using S3 to store results.";
       LOG.error(message);
+      LOG.error(Arrays.toString(new Throwable().getStackTrace()).replace( ',', '\n' ));
     } else {
       String[] credParts = credentials.split(":", 3);
       if (credParts.length != 3) {

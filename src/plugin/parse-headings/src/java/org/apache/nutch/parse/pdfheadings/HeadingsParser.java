@@ -17,30 +17,31 @@
 package org.apache.nutch.parse.pdfheadings;
 
 import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.io.StringWriter;
 import java.lang.invoke.MethodHandles;
-import java.net.URL;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.html.dom.HTMLDocumentImpl;
+import org.apache.nutch.metadata.Metadata;
 import org.apache.nutch.parse.HTMLMetaTags;
 import org.apache.nutch.parse.HtmlParseFilter;
 import org.apache.nutch.parse.ParseResult;
 import org.apache.nutch.protocol.Content;
-import org.apache.tika.config.TikaConfig;
-import org.apache.tika.metadata.Metadata;
-import org.apache.tika.mime.MediaType;
-import org.apache.tika.parser.AutoDetectParser;
-import org.apache.tika.parser.CompositeParser;
-import org.apache.tika.parser.ParseContext;
-import org.apache.tika.parser.Parser;
-import org.apache.tika.sax.XHTMLContentHandler;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.Loader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.DocumentFragment;
-import org.xml.sax.ContentHandler;
 
 /**
- * This parse filter uses Tika to extract the first three major headings from
+ * This parse filter uses PdfBox to extract the first three major headings from
  * the raw content.
  *
  * It it mainly concerned with PDF texts where it will identify headings based
@@ -66,127 +67,149 @@ public class HeadingsParser implements HtmlParseFilter {
       .getLogger(MethodHandles.lookup().lookupClass());
 
   private Configuration conf;
-  private TikaConfig tikaConfig = null;
-  private DOMContentUtils utils;
-  private boolean parseEmbedded = true;
-  private boolean upperCaseElementNames = true;
 
+  @Override
   public ParseResult filter(Content content, ParseResult parseResult,
       HTMLMetaTags metaTags, DocumentFragment root) {
 
     String mimeType = content.getContentType();
+    byte[] raw = content.getContent();
+    InputStream pdfStream = new ByteArrayInputStream(raw);
 
     LOG.debug("Starting the HeadingParser on mime type " + mimeType);
 
-    // Get the right parser using the mime type as a clue
-    Parser parser;
-    if ("application/pdf".equalsIgnoreCase(mimeType)) {
-      parser = new PDFParser();
-    } else {
-      CompositeParser compositeParser = (CompositeParser) tikaConfig
-          .getParser();
-      parser = compositeParser.getParsers().get(MediaType.parse(mimeType));
-    }
-    if (parser == null) {
-      String message = "Can't retrieve Tika parser for mime-type " + mimeType;
-      LOG.error(message);
-      return parseResult;
-    }
-
-    LOG.debug("Using Tika parser {} for mime-type {}.",
-        parser.getClass().getName(), mimeType);
-
-    byte[] raw = content.getContent();
-    Metadata tikamd = new Metadata();
-
-    ContentHandler domHandler;
-    HTMLDocumentImpl doc = new HTMLDocumentImpl();
-    doc.setErrorChecking(false);
-    DocumentFragment node = doc.createDocumentFragment();
-    DOMBuilder domBuilder = new DOMBuilder(doc, node);
-    domBuilder.setUpperCaseElementNames(upperCaseElementNames);
-    domBuilder.setDefaultNamespaceURI(XHTMLContentHandler.XHTML);
-    domHandler = (ContentHandler) domBuilder;
-
-    ParseContext context = new ParseContext();
-    if (parseEmbedded) {
-      context.set(Parser.class, new AutoDetectParser(tikaConfig));
-    }
-
-    tikamd.set(Metadata.CONTENT_TYPE, mimeType);
     try {
-      parser.parse(new ByteArrayInputStream(raw), domHandler, tikamd, context);
+      // Get the pdf heading parser
+      if ("application/pdf".equalsIgnoreCase(mimeType)) {
+        PDF2Heading parser = new PDF2Heading();
+        PDDocument document = Loader.loadPDF(pdfStream);
+        StringWriter writer = new StringWriter();
+        parser.setStartPage(1);
+        parser.setEndPage(1);
+        parser.writeText(document, writer);
+        String output = writer.toString();
+
+        // extract top headings
+        String heading = getHeading(output);
+        if (heading != null && heading.length() > 0) {
+          LOG.debug("HeadingParser produced heading " + heading);
+          // Suffix heading with a rubric so later we can tell where it came
+          // from.
+          String headingPlusRubric = heading + " [from PDF fonts]";
+          parseResult.get(content.getUrl()).getData().getParseMeta()
+              .set("heading", headingPlusRubric);
+        }
+
+        // Extract npages to parse meta.
+        Metadata generalTags = metaTags.getGeneralTags();
+        String pages = generalTags.get("xmptpg:npages");
+        if (pages != null) {
+          int nPages = Integer.parseInt(pages);
+          if (nPages > 0) {
+            LOG.debug("HeadingParser produced pages " + nPages);
+            parseResult.get(content.getUrl()).getData().getParseMeta()
+                .set("pages", Integer.valueOf(nPages).toString());
+          }
+        }
+
+        // Extract Last-Modified to parse meta.
+        // Override the web-based Last-Modified with PDFParser's
+        // Created-Date or Last-Modified date.
+        // This ensures PDF info (if provided) is used as a source of date.
+        String lastModified = metaTags.getGeneralTags().get("created");
+        if (lastModified == null) {
+          lastModified = metaTags.getGeneralTags().get("modified");
+        }
+        if (lastModified != null) {
+          parseResult.get(content.getUrl()).getData().getParseMeta()
+              .set("Last-Modified", lastModified);
+        }
+      }
     } catch (Exception e) {
-      LOG.error("Error parsing " + content.getUrl(), e);
-      return parseResult;
-    }
-
-    String heading = utils.getHeading(node); // extract top headings
-    if (heading != null && heading.length() > 0) {
-      LOG.debug("HeadingParser produced heading " + heading);
-      // Suffix heading with a rubric so later we can tell where it came from.
-      String headingPlusRubric = heading + " [from PDF fonts]";
-      parseResult.get(content.getUrl()).getData().getParseMeta().set("heading",
-          headingPlusRubric);
-    }
-
-    int nPages = utils.getPageCount(node);
-    if (nPages > 0) {
-      LOG.debug("HeadingParser produced pages " + nPages);
-      parseResult.get(content.getUrl()).getData().getParseMeta().set("pages",
-          Integer.valueOf(nPages).toString());
-    }
-
-    // Override the web-based Last-Modified with PDFParser's Last-Modified
-    // This ensures copied PDFs still get a correct publication date.
-    Object lastModified = tikamd.get("Last-Modified");
-    if (lastModified != null) {
-      parseResult.get(content.getUrl()).getData().getParseMeta()
-          .set("Last-Modified", lastModified.toString());
+      LOG.error(e.toString());
     }
     return parseResult;
   }
 
-  public void setConf(Configuration conf) {
-    this.conf = conf;
-    this.tikaConfig = null;
+  /**
+   * Assemble the parser text into a heading using the embedded font clues.
+   *
+   * @return a heading or null if not suitable text for a heading.
+   */
+  String getHeading(String parsedText) {
+    StringBuffer sb = new StringBuffer();
 
-    // do we want a custom Tika configuration file
-    // deprecated since Tika 0.7 which is based on
-    // a service provider based configuration
-    String customConfFile = conf.get("tika.config.file");
-    if (customConfFile != null) {
+    Set<Float> allFontSizes = new HashSet<Float>();
+    Set<Float> maxThreeFontSizes = new HashSet<Float>();
+    Pattern fontPattern = Pattern.compile("\\[\\d+ (\\d{2,3}.\\d*)\\]");
+    Pattern headingPattern = Pattern
+        .compile("\\[\\d+ (\\d{2,3}\\.\\d*)\\]([^\\[]+)");
+    int nHeadings = 0;
+    int nWords = 0;
+
+    Matcher m = fontPattern.matcher(parsedText);
+    while (m.find()) {
+      String fontSize = m.group(1);
       try {
-        // see if a Tika config file can be found in the job file
-        URL customTikaConfig = conf.getResource(customConfFile);
-        if (customTikaConfig != null) {
-          tikaConfig = new TikaConfig(customTikaConfig,
-              this.getClass().getClassLoader());
+        Float fFontSize = Float.parseFloat(fontSize);
+        allFontSizes.add(fFontSize);
+      } catch (Exception swallow) {
+      }
+    }
+
+    for (int i = 0; i < 3 && allFontSizes.size() > 0; i++) {
+      Float fMaxFont = Collections.max(allFontSizes);
+      maxThreeFontSizes.add(fMaxFont);
+      allFontSizes.remove(fMaxFont);
+    }
+
+    // For font-based selection...
+    // iterate through the nodes and select the first three nodes that have a
+    // large font.
+    Float fLastFontSize = 0.0f;
+    m = headingPattern.matcher(parsedText);
+    while (m.find() && (nHeadings < 3 || nWords < 10)) {
+      String fontSize = m.group(1);
+      String heading = m.group(2);
+      try {
+        Float fFontSize = Float.parseFloat(fontSize);
+        if (maxThreeFontSizes.contains(fFontSize)) {
+          if (heading.length() > 0) {
+            heading = heading.trim();
+            if (sb.toString().length() > 0) {
+              sb.append(" ");
+              // Have we switched font sizes?
+              if (Float.compare(fLastFontSize,fFontSize) != 0) {
+                // On a font size switch with more than one word, treat as a subtitle.
+                if (heading.split(" ").length > 1) {
+                  sb.append("- ");
+                }
+              }
+            }
+            // Prevent really long text blocks being used in entirety.
+            if (heading.split(" ").length > 30) {
+              List<String> strList = Arrays.asList(heading.split(" "));
+              heading = String.join(" ", strList.subList(0, 29));
+            }
+            sb.append(heading);
+            nHeadings++;
+            nWords += heading.split(" ").length;
+          }
         }
-      } catch (Exception e1) {
-        String message = "Problem loading custom Tika configuration from "
-            + customConfFile;
-        LOG.error(message, e1);
+        fLastFontSize = fFontSize;
+      } catch (Exception e) {
       }
     }
-    if (tikaConfig == null) {
-      try {
-        tikaConfig = new TikaConfig(this.getClass().getClassLoader());
-      } catch (Exception e2) {
-        String message = "Problem loading default Tika configuration";
-        LOG.error(message, e2);
-      }
-    }
-
-    utils = new DOMContentUtils(conf);
-
-    upperCaseElementNames = conf.getBoolean("tika.uppercase.element.names",
-        true);
-    parseEmbedded = conf.getBoolean("tika.parse.embedded", true);
+    return sb.toString();
   }
 
+  @Override
+  public void setConf(Configuration conf) {
+    this.conf = conf;
+  }
+
+  @Override
   public Configuration getConf() {
     return this.conf;
   }
-
 }

@@ -49,6 +49,8 @@ public class TikaParserTest {
   public void setUp() {
     conf = NutchConfiguration.create();
     conf.set("file.content.limit", "-1");
+    conf.set("parserfilter.thumb.credentials", "AWS_ACCESS_KEY_ID:AWS_SECRET_ACCESS_KEY:9343-a2bf76236ec823c6ceaaf37cc591f4c5");
+    conf.set("lang.translate.fields", "title_english");
   }
 
   public String getTextContent(String fileName)

@@ -157,12 +157,14 @@ public class TranslateParser implements HtmlParseFilter {
 
     targetLang = conf.get("parse.translate.targetlang", "en");
     String[] fields = conf.getStrings("parse.translate.fields");
-    for (int i = 0; i < fields.length; i++) {
-      String field = fields[i];
-      if (field.length() > 0) {
-        String[] parts = field.split("=");
-        if (parts.length == 2) {
-          FIELD_MAP.put(parts[0], parts[1]);
+    if (fields != null) {
+      for (int i = 0; i < fields.length; i++) {
+        String field = fields[i];
+        if (field.length() > 0) {
+          String[] parts = field.split("=");
+          if (parts.length == 2) {
+            FIELD_MAP.put(parts[0], parts[1]);
+          }
         }
       }
     }

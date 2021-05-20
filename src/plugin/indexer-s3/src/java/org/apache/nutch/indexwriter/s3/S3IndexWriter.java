@@ -18,6 +18,9 @@ package org.apache.nutch.indexwriter.s3;
 
 import java.lang.invoke.MethodHandles;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.time.format.DateTimeFormatter;
 import java.io.BufferedInputStream;
@@ -266,6 +269,7 @@ public class S3IndexWriter implements IndexWriter {
 
   /**
    * A function to clean out JSONObject keys with empty strings or null value or empty array.
+   * Also cleans any attribute who's key name is 'url' by running a URL cleaner.
    * Runs recursively through nested JSONObjects within the provided Object.
    *
    * @param jDoc a JSONObject
@@ -296,7 +300,12 @@ public class S3IndexWriter implements IndexWriter {
         // Remove any zero-length string.
         String str = (String) obj;
         if (str.trim().length() > 0) {
-          jReturn.put(key, obj);
+          if ("url".equalsIgnoreCase(key)) {
+            String urlStr = escapeIllegalUrlCharacters(str);
+            jReturn.put(key, urlStr);
+          } else {
+            jReturn.put(key, obj);
+          }
         }
 
       } else if (obj instanceof JSONObject) {
@@ -609,6 +618,36 @@ public class S3IndexWriter implements IndexWriter {
     } catch (Exception ex) {
       LOG.error(ex.getMessage(), ex);
     }
+  }
+
+  /**
+   * A utility to clean URLs of illegal characters.
+   * Based on Stack Overflow conversation here
+   * https://stackoverflow.com/questions/724043/http-url-address-encoding-in-java/4605816#4605816
+   *
+   * @param toEscape
+   * @return the clean URL string
+   */
+  private String escapeIllegalUrlCharacters(String toEscape) {
+    // If things go haywire, we return the original string.
+    String newUrlStr = toEscape;
+
+    try {
+      URL url = new URL(toEscape);
+      URI uri = new URI(url.getProtocol(), url.getUserInfo(), url.getHost(), url.getPort(), url.getPath(), url.getQuery(), url.getRef());
+      // if an escaped %XX is included in the toEscape string, it will be re-encoded to %25 and we don't want re-encoding, just encoding
+      URL newUrl = new URL(uri.toString().replace("%25", "%"));
+      newUrlStr = newUrl.toString();
+      if (!newUrlStr.equals(toEscape)) {
+        LOG.info("Refactored " + toEscape + " to " + newUrlStr);
+      }
+    } catch (MalformedURLException mfe) {
+      LOG.warn("Malformed URL Exception cleaning URL '" + toEscape + "', " + mfe.toString());
+    } catch (URISyntaxException use) {
+      LOG.warn("URI Syntax Exception cleaning URL '" + toEscape + "', " + use.toString());
+    }
+
+    return newUrlStr;
   }
 
   @Override
