@@ -23,7 +23,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.time.format.DateTimeFormatter;
-import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -173,10 +172,10 @@ public class S3IndexWriter implements IndexWriter {
   /**
    * Find the object in a JSONObject with the specified keyPath.
    *
-   * The find is capable of finding objects that are nested objects
-   * or list of objects.  Array searching is limited to finding
-   * either the first object in the array with the matching key
-   * or (if its a 'props' array), the member that has the request key.
+   * The find is capable of finding objects that are nested objects or list of
+   * objects. Array searching is limited to finding either the first object in
+   * the array with the matching key or (if its a 'props' array), the member
+   * that has the request key.
    *
    * @param keyPath
    *          a dot-notation path to the object, if we are searching for a prop,
@@ -188,7 +187,8 @@ public class S3IndexWriter implements IndexWriter {
    */
   private Object find(String keyPath, JSONObject jParent) throws JSONException {
 
-    // Split the dot notation into individual keys that we will search for iteratively.
+    // Split the dot notation into individual keys that we will search for
+    // iteratively.
     String[] keys = keyPath.split("\\.");
     Object obj = jParent;
 
@@ -197,7 +197,8 @@ public class S3IndexWriter implements IndexWriter {
     // The key name we are looking for in a key/value pair.
     String name = null;
 
-    // For every path element in the dot notation, find the object corresponding to that path.
+    // For every path element in the dot notation, find the object corresponding
+    // to that path.
     for (int pathIndex = 0; pathIndex < keys.length; pathIndex++) {
       String key = keys[pathIndex];
 
@@ -216,7 +217,7 @@ public class S3IndexWriter implements IndexWriter {
       if (obj == null) {
         break;
 
-      // This loop will encounter JSONObjects and JSONArrays.
+        // This loop will encounter JSONObjects and JSONArrays.
       } else if (obj instanceof JSONObject) {
         JSONObject jo = (JSONObject) obj;
         if (jo.has(key)) {
@@ -238,7 +239,8 @@ public class S3IndexWriter implements IndexWriter {
           boolean foundObj = false;
           for (int i = 0; i < ja.length(); i++) {
             JSONObject jo = ja.getJSONObject(i);
-            if (isProp && jo.has("key") && jo.has("value") && name.equals(jo.getString("key"))) {
+            if (isProp && jo.has("key") && jo.has("value")
+                && name.equals(jo.getString("key"))) {
               if (isLastPath) {
                 obj = jo;
               }
@@ -252,7 +254,7 @@ public class S3IndexWriter implements IndexWriter {
               }
               foundObj = true;
               break;
-            } else if ( i + 1 >= ja.length()) {
+            } else if (i + 1 >= ja.length()) {
               obj = null;
             }
           }
@@ -268,12 +270,15 @@ public class S3IndexWriter implements IndexWriter {
   }
 
   /**
-   * A function to clean out JSONObject keys with empty strings or null value or empty array.
-   * Also cleans any attribute who's key name is 'url' by running a URL cleaner.
-   * Runs recursively through nested JSONObjects within the provided Object.
+   * A function to clean out JSONObject keys with empty strings or null value or
+   * empty array. Also cleans any attribute who's key name is 'url' by running a
+   * URL cleaner. Runs recursively through nested JSONObjects within the
+   * provided Object.
    *
-   * @param jDoc a JSONObject
-   * @return the cleaned JSONObject or null if it needs to be removed in entirety.
+   * @param jDoc
+   *          a JSONObject
+   * @return the cleaned JSONObject or null if it needs to be removed in
+   *         entirety.
    * @throws JSONException
    */
   private JSONObject clean(JSONObject jDoc) throws JSONException {
@@ -329,10 +334,11 @@ public class S3IndexWriter implements IndexWriter {
           if (arrayElem == null) {
             continue;
           } else if (arrayElem instanceof JSONObject) {
-            JSONObject jo  = (JSONObject) arrayElem;
+            JSONObject jo = (JSONObject) arrayElem;
             // Is it a kv prop with an empty value?
             if (jo.has("key") && jo.has("value")) {
-              if ("".equals(jo.getString("value")) || null == jo.getString("value")) {
+              if ("".equals(jo.getString("value"))
+                  || null == jo.getString("value")) {
                 // Skipping prop which has an empty value
                 continue;
               } else {
@@ -375,13 +381,16 @@ public class S3IndexWriter implements IndexWriter {
    * Validate a JSON object using the validation endpoint.
    *
    * @param json
-   * @return "OK" if valid, otherwise a message indicating the invalidating condition.
+   * @return A message containing "OK" if valid, otherwise a message indicating
+   *         the invalidating condition.
    */
-  private String validate( String json ) {
-    String validatorResponse = "OK";
+  private String validate(String json) {
+    String validatorResponse = "DEFAULTOK";
+    InputStream in = null;
+    OutputStream os = null;
+    HttpURLConnection con = null;
     try {
       URL url = new URL(validator);
-      HttpURLConnection con = null;
       con = (HttpURLConnection) url.openConnection();
       con.setRequestMethod("POST");
       con.setRequestProperty("Content-Type", "application/json; utf-8");
@@ -392,29 +401,56 @@ public class S3IndexWriter implements IndexWriter {
       con.setDoOutput(true);
 
       // POST the JSON to the validator
-      OutputStream os = con.getOutputStream();
-      os.write(json.getBytes("UTF-8"));
+      byte[] jsonBytes = json.getBytes("UTF-8");
+      con.setRequestProperty("Content-Length",
+          Integer.toString(jsonBytes.length));
+      os = con.getOutputStream();
+      os.write(jsonBytes);
       os.flush();
-      os.close();
 
       int responseCode = con.getResponseCode();
-      String responseStr = "";
-      if(responseCode != 200) {
-        InputStream in = new BufferedInputStream(con.getErrorStream());
-        responseStr = IOUtils.toString(in, "UTF-8");
-        in.close();
-      } else {
-        // Read the validator response into a string
-        InputStream in = new BufferedInputStream(con.getInputStream());
-        responseStr = IOUtils.toString(in, "UTF-8");
-        in.close();
+      if (responseCode < 400) {
+        // Read the validation response into a string
+        in = con.getInputStream();
+      } else if (responseCode >= 400) {
+        // Read the error response into a string
+        in = con.getErrorStream();
+        LOG.error("Returning " + responseCode + " from validator");
       }
-      con.disconnect();
-      if (responseStr.indexOf("OK") == -1) {
-        validatorResponse = responseStr;
-      }
+      validatorResponse = IOUtils.toString(in, "UTF-8");
     } catch (Exception e) {
       LOG.error("Unable to validate using " + validator, e);
+    } finally {
+      try {
+        if (os != null) {
+          os.close();
+        }
+      } catch (IOException e) {
+        LOG.error("Exception closing validator outputstream", e);
+      }
+      try {
+        if (in != null) {
+          in.close();
+        }
+      } catch (IOException e) {
+        LOG.error("Exception closing validator inputstream", e);
+      }
+      try {
+        if (con != null) {
+          con.disconnect();
+        }
+      } catch (Exception e) {
+        LOG.error("Exception closing validator connection", e);
+      }
+    }
+    // If the validation response default has not been replaced by a correct
+    // response or by an error, then we were unable to get a response.
+    // In this case we default to "OK".
+    // The best option at this point is to emit a warning and write the output
+    // anyway. The S3 consumer can decide whether the file is OK or not.
+    if (validatorResponse.equals("DEFAULTOK")) {
+      LOG.error(
+          "Unable to contact the S3 File Validator. Accepting the input by default");
     }
     return validatorResponse;
   }
@@ -427,14 +463,15 @@ public class S3IndexWriter implements IndexWriter {
     // Collection UUID _ artifact UUID.json (for meta)
     // Collection UUID _ artifact UUID.txt (for full text)
 
-    String collectionId = (String) doc.getFieldValue("collection.slug");
+    String collectionId = (String) doc.getFieldValue("collection.id");
     if (StringUtils.isBlank(collectionId)) {
       collectionId = "unknown-collection";
     }
 
-    // If there's a field with the name 'uuid_seed'; we use it to generate a UUID
+    // If there's a field with the name 'uuid_seed'; we use it to generate a
+    // UUID
     // In this way we can convert the NutchDoc's ID to a UUID
-    String uuidSeed = (String)doc.getFieldValue("uuid_seed");
+    String uuidSeed = (String) doc.getFieldValue("uuid_seed");
     if (uuidSeed != null && uuidSeed.length() > 0) {
       uuid = UUID.nameUUIDFromBytes(uuidSeed.getBytes());
       template = template.replace("uuid", uuid.toString());
@@ -450,24 +487,31 @@ public class S3IndexWriter implements IndexWriter {
         fullText = (String) fullTextObj;
         fullText = fullText.trim();
       } else {
-        LOG.warn("full_text_file is not a String.  Will not be saved to text/plain");
+        LOG.warn(
+            "full_text_file is not a String.  Will not be saved to text/plain");
       }
       // The field is removed so it does not get added to the JSON.
       doc.removeField("full_text_file");
-      // Writing of the file is deferred until below; after we have validated the JSON.
+      // Writing of the file is deferred until below; after we have validated
+      // the JSON.
     }
 
-    // Add each field of this Nutch doc to a JSON representation according to the
+    // Add each field of this Nutch doc to a JSON representation according to
+    // the
     // template.
-    // NutchDocuments are flat key=value, or key=array, but the template schema may be nested.
-    // So this section of code builds a nested object from a template with empty values.
-    // It then hydrates it by finding the object with the desired path in the template
+    // NutchDocuments are flat key=value, or key=array, but the template schema
+    // may be nested.
+    // So this section of code builds a nested object from a template with empty
+    // values.
+    // It then hydrates it by finding the object with the desired path in the
+    // template
     // and then pasting in the value from the flat NutchDocument.
     //
     // Field names in the NutchDocument have been mapped to the template schema
     // field.
     //
-    // The field names in the NutchDocument use a dot notation to indicate their output path. 
+    // The field names in the NutchDocument use a dot notation to indicate their
+    // output path.
     // See conf/indexwriters.xml for the mapping.
     try {
       JSONObject jDoc = new JSONObject(template);
@@ -479,7 +523,8 @@ public class S3IndexWriter implements IndexWriter {
         Object elem = find(key, jDoc);
 
         if (elem != null) {
-          // The last path on the dot notation key is the key for the nested object.
+          // The last path on the dot notation key is the key for the nested
+          // object.
           String[] objKeys = key.split("\\.");
           String objKey = objKeys[objKeys.length - 1];
           if (objKey.indexOf("=") > 0) {
@@ -496,10 +541,13 @@ public class S3IndexWriter implements IndexWriter {
                 ja.put(value);
               }
 
-            // If the match output is an object, see if the target attribute is an array.
+              // If the match output is an object, see if the target attribute
+              // is an array.
             } else if (elem instanceof JSONObject) {
               JSONObject jo = (JSONObject) elem;
-              boolean isPropertyAnArray = (jo.get(objKey) instanceof JSONArray) ? true : false;
+              boolean isPropertyAnArray = (jo.get(objKey) instanceof JSONArray)
+                  ? true
+                  : false;
               if (isPropertyAnArray) {
                 ArrayList<Object> al = new ArrayList<Object>();
                 for (Object value : values) {
@@ -507,7 +555,10 @@ public class S3IndexWriter implements IndexWriter {
                 }
                 jo.put(objKey, al);
               } else {
-                LOG.warn("Attempt to put a multi-valued Nutch field into a scalar attribute: " + key + " into " + objKey + ", saving first elem only.");
+                LOG.warn(
+                    "Attempt to put a multi-valued Nutch field into a scalar attribute: "
+                        + key + " into " + objKey
+                        + ", saving first elem only.");
                 jo.put(objKey, values.get(0));
               }
             }
@@ -522,8 +573,12 @@ public class S3IndexWriter implements IndexWriter {
               ja.put(value);
             } else if (elem instanceof JSONObject) {
               JSONObject jo = (JSONObject) elem;
-              boolean isPropertyAnArray = (jo.get(objKey) instanceof JSONArray) ? true : false;
-              boolean isPropertyAnInteger = (jo.get(objKey) instanceof Integer) ? true : false;
+              boolean isPropertyAnArray = (jo.get(objKey) instanceof JSONArray)
+                  ? true
+                  : false;
+              boolean isPropertyAnInteger = (jo.get(objKey) instanceof Integer)
+                  ? true
+                  : false;
               if (isPropertyAnArray) {
                 ArrayList<Object> al = new ArrayList<Object>();
                 al.add(value);
@@ -533,10 +588,12 @@ public class S3IndexWriter implements IndexWriter {
                   jo.put(objKey, value);
                 } else if (value instanceof String) {
                   try {
-                    Integer intValue = Integer.valueOf((String)value);
+                    Integer intValue = Integer.valueOf((String) value);
                     jo.put(objKey, intValue);
                   } catch (NumberFormatException nfe) {
-                    LOG.error("Attempt to place a non numeric value into an integer attribute: " + objKey + " from " + value);
+                    LOG.error(
+                        "Attempt to place a non numeric value into an integer attribute: "
+                            + objKey + " from " + value);
                   }
                 }
               } else {
@@ -564,8 +621,8 @@ public class S3IndexWriter implements IndexWriter {
 
       ObjectMetadata s3Meta = new ObjectMetadata();
       s3Meta.setContentType("application/json");
-      if ("OK".equals(validationMessage)) {
-        String s3Key = s3Folder + "/" + collectionId + "-" + uuid.toString()
+      if (validationMessage.indexOf("OK") > -1) {
+        String s3Key = s3Folder + "/" + collectionId + "_" + uuid.toString()
             + ".json";
         byte[] contentAsBytes = jsonString.getBytes("UTF-8");
         ByteArrayInputStream contentsAsStream = new ByteArrayInputStream(
@@ -578,16 +635,16 @@ public class S3IndexWriter implements IndexWriter {
         if (fullText != null) {
           if (fullText.length() > 0) {
             s3Meta.setContentType("text/plain");
-            s3Key = s3Folder + "/" + collectionId + "-" + uuid.toString()
+            s3Key = s3Folder + "/" + collectionId + "_" + uuid.toString()
                 + ".txt";
             contentAsBytes = fullText.getBytes("UTF-8");
-            contentsAsStream = new ByteArrayInputStream(
-                contentAsBytes);
+            contentsAsStream = new ByteArrayInputStream(contentAsBytes);
             s3Meta.setContentLength(contentAsBytes.length);
-            s3.putObject(
-                new PutObjectRequest(s3Bucket, s3Key, contentsAsStream, s3Meta));
+            s3.putObject(new PutObjectRequest(s3Bucket, s3Key, contentsAsStream,
+                s3Meta));
           } else {
-            LOG.warn("NutchField full_text_file is an empty String; Not writing to output");
+            LOG.warn(
+                "NutchField full_text_file is an empty String; Not writing to output");
           }
         }
 
@@ -601,8 +658,8 @@ public class S3IndexWriter implements IndexWriter {
           }
           jDoc.put("validation_message", validationObj);
           jsonString = jDoc.toString(2);
-          String s3Key = s3InvalidFolder + "/" + collectionId + "-" + uuid.toString()
-              + ".json";
+          String s3Key = s3InvalidFolder + "/" + collectionId + "-"
+              + uuid.toString() + ".json";
           byte[] contentAsBytes = jsonString.getBytes("UTF-8");
           ByteArrayInputStream contentsAsStream = new ByteArrayInputStream(
               contentAsBytes);
@@ -621,8 +678,8 @@ public class S3IndexWriter implements IndexWriter {
   }
 
   /**
-   * A utility to clean URLs of illegal characters.
-   * Based on Stack Overflow conversation here
+   * A utility to clean URLs of illegal characters. Based on Stack Overflow
+   * conversation here
    * https://stackoverflow.com/questions/724043/http-url-address-encoding-in-java/4605816#4605816
    *
    * @param toEscape
@@ -634,17 +691,21 @@ public class S3IndexWriter implements IndexWriter {
 
     try {
       URL url = new URL(toEscape);
-      URI uri = new URI(url.getProtocol(), url.getUserInfo(), url.getHost(), url.getPort(), url.getPath(), url.getQuery(), url.getRef());
-      // if an escaped %XX is included in the toEscape string, it will be re-encoded to %25 and we don't want re-encoding, just encoding
+      URI uri = new URI(url.getProtocol(), url.getUserInfo(), url.getHost(),
+          url.getPort(), url.getPath(), url.getQuery(), url.getRef());
+      // if an escaped %XX is included in the toEscape string, it will be
+      // re-encoded to %25 and we don't want re-encoding, just encoding
       URL newUrl = new URL(uri.toString().replace("%25", "%"));
       newUrlStr = newUrl.toString();
       if (!newUrlStr.equals(toEscape)) {
         LOG.info("Refactored " + toEscape + " to " + newUrlStr);
       }
     } catch (MalformedURLException mfe) {
-      LOG.warn("Malformed URL Exception cleaning URL '" + toEscape + "', " + mfe.toString());
+      LOG.warn("Malformed URL Exception cleaning URL '" + toEscape + "', "
+          + mfe.toString());
     } catch (URISyntaxException use) {
-      LOG.warn("URI Syntax Exception cleaning URL '" + toEscape + "', " + use.toString());
+      LOG.warn("URI Syntax Exception cleaning URL '" + toEscape + "', "
+          + use.toString());
     }
 
     return newUrlStr;
@@ -690,18 +751,23 @@ public class S3IndexWriter implements IndexWriter {
         new AbstractMap.SimpleEntry<>("The validation endpoint",
             this.validator == null ? "" : this.validator));
     properties.put(S3Constants.INVALID_FOLDER,
-        new AbstractMap.SimpleEntry<>("The S3 folfer to store invalid results in",
-            this.s3InvalidFolder == null ? "" : this.s3InvalidFolder));
-    properties.put(S3Constants.AWS_ACCESS_KEY_ID,
         new AbstractMap.SimpleEntry<>(
-            "The AWS Access Key ID for accessing the bucket",
-            this.awsAccessKeyId == null ? "" : "****" + this.awsAccessKeyId.substring(awsAccessKeyId.length() - 4)));
+            "The S3 folfer to store invalid results in",
+            this.s3InvalidFolder == null ? "" : this.s3InvalidFolder));
+    properties.put(S3Constants.AWS_ACCESS_KEY_ID, new AbstractMap.SimpleEntry<>(
+        "The AWS Access Key ID for accessing the bucket",
+        this.awsAccessKeyId == null ? ""
+            : "****"
+                + this.awsAccessKeyId.substring(awsAccessKeyId.length() - 4)));
     properties.put(S3Constants.AWS_SECRET_ACCESS_KEY,
         new AbstractMap.SimpleEntry<>(
             "The AWS Secret Access Key credentials for accessing the bucket",
-            this.awsSecretAccessKey == null ? "" : "****" + this.awsSecretAccessKey.substring(awsSecretAccessKey.length() - 4)));
+            this.awsSecretAccessKey == null ? ""
+                : "****" + this.awsSecretAccessKey
+                    .substring(awsSecretAccessKey.length() - 4)));
     properties.put(S3Constants.TEMPLATE,
-        new AbstractMap.SimpleEntry<>("The JSON template for the constructed doc",
+        new AbstractMap.SimpleEntry<>(
+            "The JSON template for the constructed doc",
             this.template == null ? "" : this.template));
 
     return properties;

@@ -433,8 +433,8 @@ public class FeedInjector extends NutchTool implements Tool {
               String collectionTitle = null;
               String collectionOrgId = null;
               JSONObject collection = ja.getJSONObject(i);
-              if (collection.has("slug")) {
-                collectionId = collection.getString("slug");
+              if (collection.has("uuid")) {
+                collectionId = collection.getString("uuid");
               }
               if (collection.has("url")) {
                 seedUrl = collection.getString("url");
@@ -452,7 +452,7 @@ public class FeedInjector extends NutchTool implements Tool {
                   && collectionTitle != null && collectionOrgId != null) {
                 // We have all the metadata
                 String seedFileLine = seedUrl + "\tcollection.title=" + collectionTitle
-                    + "\tcollection.slug=" + collectionId + "\torg.slug="
+                    + "\tcollection.id=" + collectionId + "\torg.slug="
                     + collectionOrgId;
                 seedUrls.add(seedFileLine);
               } else {

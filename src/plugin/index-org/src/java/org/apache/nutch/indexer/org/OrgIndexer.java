@@ -16,9 +16,7 @@
  */
 package org.apache.nutch.indexer.org;
 
-import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -37,6 +35,7 @@ import org.apache.nutch.indexer.IndexingException;
 import org.apache.nutch.indexer.NutchDocument;
 import org.apache.nutch.parse.Parse;
 import org.apache.hadoop.io.Text;
+import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.conf.Configuration;
 
 import org.codehaus.jettison.json.JSONArray;
@@ -58,8 +57,6 @@ public class OrgIndexer implements IndexingFilter {
 
   private LRUCache<String, HashMap<String, String>> cache = new LRUCache<String, HashMap<String, String>>(
       500);
-
-  private HashMap<String, String> domainMap = new HashMap<String, String>();
 
   private Configuration conf;
   private String serviceUrl;
@@ -85,58 +82,72 @@ public class OrgIndexer implements IndexingFilter {
       CrawlDatum datum, Inlinks inlinks) throws IndexingException {
 
     // Find the domain of this seed URL
+    String orgSlug = null;
+    String domain = null;
     try {
-      String urlStr = url.toString();
-      // Strip out any S3 storage prefix (applies to cases where we are
-      // 'crawling' archived content).
-      urlStr = urlStr.replace("coherent-webarchive.s3.us-east-2.amazonaws.com/",
-          "");
-      URI uri = new URI(urlStr);
-      String domain = uri.getHost();
-      LOG.debug("URL is " + url.toString() + ", domain is " + domain);
-      if (domain != null) {
-        // Get the organization metadata for this domain
-        Map<String, String> fields = getOrganizationMeta(domain);
+      Writable metadata = datum.getMetaData().get(new Text("org.slug"));
+      if (metadata != null) {
+        orgSlug = metadata.toString();
+      }
+
+      try {
+        String urlStr = url.toString();
+        // Strip out any S3 storage prefix (applies to cases where we are
+        // 'crawling' archived content).
+        urlStr = urlStr
+            .replace("coherent-webarchive.s3.us-east-2.amazonaws.com/", "");
+        URI uri = new URI(urlStr);
+        domain = uri.getHost();
+        LOG.debug("URL is " + url.toString() + ", domain is " + domain);
+      } catch (URISyntaxException use) {
+        LOG.error("Cannot parse domain from URL " + url.toString() + ", "
+            + use.toString());
+      }
+
+      if (orgSlug != null || domain != null) {
+        // Get the organization metadata for this slug or domain
+        Map<String, String> fields = getOrganizationMeta(orgSlug, domain);
         for (Entry<String, String> entry : fields.entrySet()) {
           doc.add(entry.getKey(), entry.getValue());
         }
       }
-    } catch (URISyntaxException use) {
-      LOG.error("Cannot parse domain from URL " + url.toString() + ", "
-          + use.toString());
+    } catch (Exception e) {
+      LOG.error("Cannot obtain org metadata " + domain + ", org " + orgSlug,
+          e.toString());
     }
     return doc;
   }
 
   /**
-   * Populate a HashMap of organization metadata from the domain.
+   * Populate a HashMap of organization metadata from the slug or domain.
    * 
+   * @param orgSlug
+   *          the organization id.
    * @param domain
    *          the host portion of the document url
    * @return HashMap of org fields and their corresponding values
    */
-  private HashMap<String, String> getOrganizationMeta(String domain) {
+  private HashMap<String, String> getOrganizationMeta(String orgSlug,
+      String domain) {
     HashMap<String, String> fields = new HashMap<String, String>();
 
     /*
-     * Pseudocode: Search the domain in the cache or via index.org.serviceurl to
-     * obtain the org jsan. Make a hashmap of fieldname = fieldvalue from the
+     * Pseudocode: Search the slug in the cache or via index.org.serviceurl to
+     * obtain the org json. Make a hashmap of fieldname = fieldvalue from the
      * JSON. Cache the hashmap for this org id in an LRU cache. Return the
-     * hashmap.
+     * hashmap. If slug is null, try the same thing by domain.
      */
 
-    // See if we have cached the fields for this domain
-    HashMap<String, String> cachedFields = this.cache.get(domain);
-    if (cachedFields != null) {
-      return cachedFields;
+    // Call the org lookup API via slug if provided, otherwise domain.
+    String query = orgSlug;
+    if (query == null) {
+      query = domain;
     }
 
-    // Call the org lookup API via domain or slug
-    String query = domain;
-    // In cases where the org cv does not have a searchable domain,
-    // we check a map of domain to slug.
-    if (this.domainMap.get(domain) != null) {
-      query = this.domainMap.get(domain);
+    // See if we have cached the fields for this organization
+    HashMap<String, String> cachedFields = this.cache.get(query);
+    if (cachedFields != null) {
+      return cachedFields;
     }
 
     URLConnection con = null;
@@ -155,26 +166,37 @@ public class OrgIndexer implements IndexingFilter {
       baos.close();
       String jsonStr = baos.toString("UTF-8");
       if (jsonStr.length() == 0 || !jsonStr.startsWith("[")) {
-        LOG.warn("Request for org information on " + domain
+        LOG.warn("Request for org information on " + query
             + " returned unexpected response." + jsonStr);
         return fields;
       }
       JSONArray ja = new JSONArray(jsonStr);
       if (ja.length() == 0) {
-        LOG.warn("Request for org information on " + domain
+        LOG.warn("Request for org information on " + query
             + " returned no hits. Ignoring");
         return fields;
       }
+      // Default to the first hit.
       JSONObject jo = ja.getJSONObject(0);
       if (ja.length() > 1) {
-        // The api will return multiple matches on a slug search if slug
-        // is a substring of some other org. Look for an exact match.
+        // The api can return multiple matches. Look for an exact match on the query.
         for (int i = 0; i < ja.length(); i++) {
           JSONObject joTmp = ja.getJSONObject(i);
-          String slug = joTmp.getString("slug");
-          if (query.equals(slug)) {
-            jo = joTmp;
-            break;
+          if (orgSlug != null) {
+            String slug = joTmp.getString("slug");
+            if (orgSlug.equals(slug)) {
+              jo = joTmp;
+              break;
+            }
+          } else if (domain != null ) {
+            JSONArray domains = joTmp.getJSONArray("domains");
+            for (int domIndex = 0; domIndex < domains.length(); domIndex++) {
+              String d = domains.getString(domIndex);
+              if (domain.equals(d)) {
+                jo = joTmp;
+                break;
+              }
+            }
           }
         }
       }
@@ -202,7 +224,7 @@ public class OrgIndexer implements IndexingFilter {
       if (jo.has("org_type") && !jo.getString("org_type").equals("null")) {
         fields.put("organization.type", jo.getString("org_type"));
       }
-      this.cache.put(domain, fields);
+      this.cache.put(query, fields);
     } catch (Exception e) {
       LOG.error("Unable to obtain Org metadata. " + e.toString());
     }
@@ -225,11 +247,6 @@ public class OrgIndexer implements IndexingFilter {
     if (this.xApiKey == null) {
       LOG.error("Please set index.org.x-api-key to use the index-org plugin");
     }
-
-    String domainMapFile = conf.getTrimmed("index.org.domainmap");
-    if (domainMapFile != null) {
-      loadDomainMap(domainMapFile);
-    }
   }
 
   /**
@@ -240,34 +257,7 @@ public class OrgIndexer implements IndexingFilter {
   }
 
   /**
-   * Read the domain map into a HashMap
-   */
-  public void loadDomainMap(String fileName) {
-    BufferedReader reader = null;
-    int rows = 0;
-    try {
-      reader = new BufferedReader(this.conf.getConfResourceAsReader(fileName));
-      String line = reader.readLine();
-      while (line != null) {
-        if (line.trim().length() > 0) {
-          String[] columns = line.trim().split("\t");
-          // Domain is in column 1, org id is in column 3
-          if (columns.length > 2) {
-            this.domainMap.put(columns[0], columns[2]);
-            rows++;
-          }
-        }
-        line = reader.readLine();
-      }
-      reader.close();
-    } catch (IOException e) {
-      LOG.error("Unable to read domain map " + fileName + ", " + e.toString());
-    }
-    LOG.info("Loaded " + rows + " rows from the domain map " + fileName);
-  }
-
-  /**
-   * An LRU cache, used to store organization metadata by domain.
+   * An LRU cache, used to store organization metadata by slug or domain.
    */
   public class LRUCache<K, V> extends LinkedHashMap<K, V> {
     private static final long serialVersionUID = 6429219277806426246L;

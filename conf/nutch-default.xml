@@ -2054,20 +2054,11 @@ visit https://cwiki.apache.org/confluence/display/NUTCH/SimilarityScoringFilter 
 <!-- index.org plugin properties -->
 
 <property>
-  <name>index.org.domainmap</name>
-  <value></value>
-  <description>
-    A map of domain name to org nam and org id
-    A three-column tab-separated list with domain, orgname and orgid
-  </description>
-</property>
-
-<property>
   <name>index.org.serviceurl</name>
   <value></value>
   <description>
-    API endpoint used by plugin index-org to search for host metadata using a domain (or other searchable attribute).
-    Expected repsponse is a JSON dict with fieldname: fieldvalue for each org field.
+    API endpoint used by plugin index-org to search for host metadata using a slug or domain (or other searchable attribute).
+    Expected response is a JSON array of dict's with fieldname: fieldvalue for each org field.
   </description>
 </property>
 

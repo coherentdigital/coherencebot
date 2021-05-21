@@ -16,13 +16,13 @@ import org.apache.pdfbox.text.TextPosition;
  * PDF2Heading is an implementation of PdfBox's PdfTextStripper designed to
  * extract and tag large font text from the selected page range and present that
  * to the caller as a String.
- * 
+ *
  * It it used as a title selector. The calling parser then can choose this
  * large-font text in the manner it sees fit.
- * 
+ *
  * See the writeString class for the details of the font-info tags that are
  * added to the text.
- * 
+ *
  * @author pciuffetti
  */
 public class PDF2Heading extends PDFTextStripper {

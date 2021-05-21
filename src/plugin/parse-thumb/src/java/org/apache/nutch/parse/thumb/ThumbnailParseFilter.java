@@ -78,7 +78,7 @@ public class ThumbnailParseFilter implements HtmlParseFilter {
     String mimeType = content.getContentType();
     List<String> supportedMimeList = Arrays.asList(supportedMimeTypes);
     if (mimeType == null || !supportedMimeList.contains(mimeType)) {
-      LOG.debug("Cannot generate a thumbail for mime type " + mimeType);
+      LOG.debug("Cannot generate a thumbnail for mime type " + mimeType);
       return parseResult;
     }
 
@@ -100,6 +100,7 @@ public class ThumbnailParseFilter implements HtmlParseFilter {
 
     // Does the metadata already have a thumbnail?
     String thumbnailUrl = null;
+    String archiveUrl = null;
     Parse parse = parseResult.get(urlString);
     if (parse != null) {
       thumbnailUrl = parse.getData().getMeta("thumbnail");
@@ -192,10 +193,7 @@ public class ThumbnailParseFilter implements HtmlParseFilter {
                   .withCannedAcl(CannedAccessControlList.PublicRead));
               LOG.debug("Saved thumbnail in s3 at " + s3Key);
               thumbnailUrl = s3.getUrl(s3Bucket, s3Key).toString();
-
-              // Save the thumbnail URL in the parseMeta
-              parse.getData().getParseMeta().set("thumbnail", thumbnailUrl);
-              // TODO: save the S3 URL in thumnail.url_archive 
+              archiveUrl = "s3://" + s3Bucket + "/" + s3Key;
             } else {
               LOG.debug("Thumbnail returned is zero bytes for " + serviceUrl);
             }
@@ -207,11 +205,18 @@ public class ThumbnailParseFilter implements HtmlParseFilter {
         }
       } else {
         thumbnailUrl = s3.getUrl(s3Bucket, s3Key).toString();
-        // Save the thumbnail URL in the parseMeta
-        parse.getData().getParseMeta().set("thumbnail", thumbnailUrl);
+        archiveUrl = "s3://" + s3Bucket + "/" + s3Key;
       }
     } catch (Exception e) {
       LOG.error("Unable to generate thumbnail for " + urlString, e);
+    }
+
+    // Save the thumbnail URLs in the parseMeta
+    if (thumbnailUrl != null) {
+      parse.getData().getParseMeta().set("thumbnail", thumbnailUrl);
+    }
+    if (archiveUrl != null) {
+      parse.getData().getParseMeta().set("thumbnail.url_archive", archiveUrl);
     }
 
     return parseResult;
