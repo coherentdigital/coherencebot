@@ -21,6 +21,7 @@ import org.apache.nutch.crawl.Inlinks;
 import org.apache.nutch.indexer.IndexingFilter;
 import org.apache.nutch.indexer.IndexingException;
 import org.apache.nutch.indexer.NutchDocument;
+import org.apache.nutch.indexer.NutchField;
 import org.apache.nutch.parse.Parse;
 import org.apache.hadoop.io.Text;
 
@@ -28,7 +29,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.hadoop.conf.Configuration;
 
@@ -43,6 +48,10 @@ public class CriteriaIndexer implements IndexingFilter {
       .getLogger(CriteriaIndexer.class);
 
   private Configuration conf;
+  private static Pattern LINE_SPLIT = Pattern.compile("(^.+$)+",
+      Pattern.MULTILINE);
+  private static Pattern NAME_VALUE_SPLIT = Pattern.compile("(.*?)=(.*)");
+  private static Map<String, List<String>> FIELD_FILTER = new HashMap<String, List<String>>();
 
   /**
    * The {@link CriteriaIndexer} filter object which selects documents as per
@@ -65,7 +74,8 @@ public class CriteriaIndexer implements IndexingFilter {
 
     int contentLength = parse.getText().length();
     if (contentLength < 4000) {
-      LOG.info("Skipping document " + url.toString() + " due to insuffient text length");
+      LOG.info("Skipping document " + url.toString()
+          + " due to insuffient text length");
       return null;
     }
     // Choose the best title from title, heading and anchor.
@@ -75,7 +85,8 @@ public class CriteriaIndexer implements IndexingFilter {
     doc.removeField("titleAlgorithm");
     doc.add("title_algorithm", bestTitleResponse[1]);
 
-    // Choose the best translated_title from title_translated and heading_translated.
+    // Choose the best translated_title from title_translated and
+    // heading_translated.
     String translatedTitle = bestTranslatedTitle(doc, bestTitleResponse[1]);
     if (translatedTitle != null) {
       doc.removeField("title_english");
@@ -84,18 +95,26 @@ public class CriteriaIndexer implements IndexingFilter {
 
     // Choose author names that are multi-part.
     String[] authors = bestAuthors(doc);
-    if (authors != null){
+    if (authors != null) {
       doc.removeField("author");
       doc.add("author", authors);
     }
 
-    return doc;
+    String rejectReason = filterTest(doc);
+
+    if (rejectReason != null) {
+      LOG.info("Rejecting document " + rejectReason);
+      return null;
+    } else {
+      return doc;
+    }
   }
 
   /**
    * Synthesize a title out of the various candidates in the Nutch document.
    *
    * Chooses from among anchor, heading and title.
+   *
    * @return two values in a string array, [0] = title, [1] = title_algorithm.
    */
   private String[] bestTitle(NutchDocument source) {
@@ -123,7 +142,8 @@ public class CriteriaIndexer implements IndexingFilter {
       // Remove non-printable chars
       cleanHeading = cleanHeading.replaceAll("\\p{C}", "");
       // Shorten to max length and trim.
-      cleanHeading = cleanHeading.substring(0, Math.min(cleanHeading.length(), maxLength)).trim();
+      cleanHeading = cleanHeading
+          .substring(0, Math.min(cleanHeading.length(), maxLength)).trim();
     }
 
     // Make a cleanTitle
@@ -132,7 +152,8 @@ public class CriteriaIndexer implements IndexingFilter {
       // Remove non-printable chars
       cleanTitle = cleanTitle.replaceAll("\\p{C}", "");
       // Shorten to max length and trim.
-      cleanTitle = removeExt(cleanTitle.substring(0, Math.min(cleanTitle.length(), maxLength)).trim());
+      cleanTitle = removeExt(cleanTitle
+          .substring(0, Math.min(cleanTitle.length(), maxLength)).trim());
     }
 
     // Make a cleanAnchor
@@ -145,7 +166,8 @@ public class CriteriaIndexer implements IndexingFilter {
       // Remove non-printable chars
       cleanAnchor = cleanAnchor.replaceAll("\\p{C}", "");
       // Shorten to max length and trim.
-      cleanAnchor = removeExt(cleanAnchor.substring(0, Math.min(cleanAnchor.length(), maxLength)).trim());
+      cleanAnchor = removeExt(cleanAnchor
+          .substring(0, Math.min(cleanAnchor.length(), maxLength)).trim());
     }
 
     // If we have a title and a heading, choose one of these.
@@ -158,68 +180,77 @@ public class CriteriaIndexer implements IndexingFilter {
       matchHeading = matchHeading.replace(" [" + headingAlgorithm + "]", "");
       matchHeading = matchHeading.replaceAll("\\p{Punct}", " ").trim();
 
-      long tUpper = matchTitle.chars().filter((s)->Character.isUpperCase(s)).count();
-      long tLower = matchTitle.chars().filter((s)->Character.isLowerCase(s)).count();
-      long hUpper = matchHeading.chars().filter((s)->Character.isUpperCase(s)).count();
-      long hLower = matchHeading.chars().filter((s)->Character.isLowerCase(s)).count();
+      long tUpper = matchTitle.chars().filter((s) -> Character.isUpperCase(s))
+          .count();
+      long tLower = matchTitle.chars().filter((s) -> Character.isLowerCase(s))
+          .count();
+      long hUpper = matchHeading.chars().filter((s) -> Character.isUpperCase(s))
+          .count();
+      long hLower = matchHeading.chars().filter((s) -> Character.isLowerCase(s))
+          .count();
       int tWords = matchTitle.split("\\s+").length;
       int hWords = matchHeading.split("\\s+").length;
       int wordDiff = tWords - hWords;
 
       if (matchTitle.equals(matchHeading)) {
-        String[] returnValue = {cleanTitle, titleAlgorithm};
+        String[] returnValue = { cleanTitle, titleAlgorithm };
         return returnValue;
       }
-      // If we have a reasonably long title with spaces and a mix of upper and lower, return that.
+      // If we have a reasonably long title with spaces and a mix of upper and
+      // lower, return that.
       if (tWords > 7 && tUpper > 0 && tLower > 5) {
-        String[] returnValue = {cleanTitle, titleAlgorithm};
+        String[] returnValue = { cleanTitle, titleAlgorithm };
         return returnValue;
       }
       if (hWords > 7 && hUpper > 0 && hLower > 5) {
-        String[] returnValue = {cleanHeading, headingAlgorithm};
+        String[] returnValue = { cleanHeading, headingAlgorithm };
         return returnValue;
       }
 
       // Return the longer
       if (wordDiff > 0) {
-        String[] returnValue = {cleanTitle, titleAlgorithm};
+        String[] returnValue = { cleanTitle, titleAlgorithm };
         return returnValue;
       } else {
-        String[] returnValue = {cleanHeading, headingAlgorithm};
+        String[] returnValue = { cleanHeading, headingAlgorithm };
         return returnValue;
       }
     }
 
     if (cleanHeading != null && cleanHeading.length() > 0) {
-      String[] returnValue = {cleanHeading, headingAlgorithm};
+      String[] returnValue = { cleanHeading, headingAlgorithm };
       return returnValue;
     }
 
     if (cleanTitle != null && cleanTitle.length() > 0) {
-      String[] returnValue = {cleanTitle, titleAlgorithm};
+      String[] returnValue = { cleanTitle, titleAlgorithm };
       return returnValue;
     }
 
     if (cleanAnchor != null && cleanAnchor.length() > 0) {
-      String[] returnValue = {cleanAnchor, anchorAlgorithm};
+      String[] returnValue = { cleanAnchor, anchorAlgorithm };
       return returnValue;
     }
 
-    String[] returnValue = {"no title", "no options"};
+    String[] returnValue = { "no title", "no options" };
     return returnValue;
   }
 
   /**
    * Choose a translated title based on which non-translated title was chosen
    *
-   * @param source = the NutchDocument
-   * @param whichTitle - the title algorithm applied to title selection
+   * @param source
+   *          = the NutchDocument
+   * @param whichTitle
+   *          - the title algorithm applied to title selection
    * @return the translated title or null if no translation
    */
   private String bestTranslatedTitle(NutchDocument source, String whichTitle) {
-    if (whichTitle.indexOf("PDF") > -1 && source.getField("heading_english") != null) {
+    if (whichTitle.indexOf("PDF") > -1
+        && source.getField("heading_english") != null) {
       return (String) source.getFieldValue("heading_english");
-    } else if (whichTitle.indexOf("title") > -1 && source.getField("title_english") != null) {
+    } else if (whichTitle.indexOf("title") > -1
+        && source.getField("title_english") != null) {
       return (String) source.getFieldValue("title_english");
     } else if (source.getField("title_english") != null) {
       return (String) source.getFieldValue("title_english");
@@ -230,38 +261,39 @@ public class CriteriaIndexer implements IndexingFilter {
   }
 
   /**
-   * Parse out of authors any single-word or empty values.
-   * leaving only 2 or more word names.
+   * Parse out of authors any single-word or empty values. leaving only 2 or
+   * more word names.
    */
   private String[] bestAuthors(NutchDocument source) {
 
     if (source.getField("author") != null) {
-        List<String> authors = new ArrayList<String>();
-        List<Object> authorList = source.getField("author").getValues();
-        for (Object authorObj : authorList) {
-          if (authorObj instanceof String) {
-            String authorStr = (String) authorObj;
-            authorStr = authorStr.trim();
-            if (authorStr.length() > 0 && authorStr.indexOf(" ") > 1) {
-              authors.add(authorStr);
-            }
+      List<String> authors = new ArrayList<String>();
+      List<Object> authorList = source.getField("author").getValues();
+      for (Object authorObj : authorList) {
+        if (authorObj instanceof String) {
+          String authorStr = (String) authorObj;
+          authorStr = authorStr.trim();
+          if (authorStr.length() > 0 && authorStr.indexOf(" ") > 1) {
+            authors.add(authorStr);
           }
         }
+      }
 
-        if (authors.size() > 0) {
-          String[] authorArray = new String[authors.size()];
-          authorArray = authors.toArray(authorArray);
-          return authorArray;
-        }
+      if (authors.size() > 0) {
+        String[] authorArray = new String[authors.size()];
+        authorArray = authors.toArray(authorArray);
+        return authorArray;
+      }
     }
     return null;
   }
 
   /**
-   * Remove an extension from a string for file names.
-   * Used in title cleaning because titles in PDFs are often file names.
+   * Remove an extension from a string for file names. Used in title cleaning
+   * because titles in PDFs are often file names.
    *
-   * @param input the string
+   * @param input
+   *          the string
    * @return the string without the extension
    */
   private String removeExt(String input) {
@@ -269,7 +301,7 @@ public class CriteriaIndexer implements IndexingFilter {
       return input;
     }
     String returnStr = input.trim();
-    String [] parts = input.trim().split("\\.");
+    String[] parts = input.trim().split("\\.");
     if (parts.length == 1) {
       return returnStr;
     }
@@ -287,28 +319,79 @@ public class CriteriaIndexer implements IndexingFilter {
     }
 
     switch (suffix) {
-      case "doc":
-      case "docx":
-      case "htm":
-      case "html":
-      case "key":
-      case "odp":
-      case "ods":
-      case "pdf":
-      case "pps":
-      case "ppt":
-      case "pptx":
-      case "rtf":
-      case "tex":
-      case "txt":
-      case "wpd":
-      case "xls":
-      case "xlsx":
-        returnStr = String.join(".", Arrays.copyOf(parts, parts.length-1));
-        break;
+    case "doc":
+    case "docx":
+    case "htm":
+    case "html":
+    case "key":
+    case "odp":
+    case "ods":
+    case "pdf":
+    case "pps":
+    case "ppt":
+    case "pptx":
+    case "rtf":
+    case "tex":
+    case "txt":
+    case "wpd":
+    case "xls":
+    case "xlsx":
+      returnStr = String.join(".", Arrays.copyOf(parts, parts.length - 1));
+      break;
     }
 
     return returnStr;
+  }
+
+  /**
+   * Test every field/keyphrase combination configured into
+   * index.criteria.filters to see if there's a reason to reject this document.
+   *
+   * All testing is done in lowercase. Punctuation is stripped; Whitespace is
+   * normalized;
+   *
+   * @param doc
+   * @return a reject explanation, or null if no reason to reject.
+   */
+  private String filterTest(NutchDocument doc) {
+    String reject = null;
+
+    // For every field in the list of filters
+    for (Map.Entry<String, List<String>> entry : FIELD_FILTER.entrySet()) {
+      String fieldName = entry.getKey();
+      NutchField field = doc.getField(fieldName);
+      if (field != null) {
+        List<Object> fieldContent = field.getValues();
+        if (fieldContent != null && fieldContent.size() > 0) {
+
+          // For every value in the field
+          for (int fc = 0; fc < fieldContent.size(); fc++) {
+            Object fieldObj = fieldContent.get(fc);
+            if (fieldObj instanceof String) {
+              String fieldValue = (String) fieldObj;
+              fieldValue = fieldValue.replaceAll("\\p{Punct}", " ");
+              fieldValue = fieldValue.replaceAll("\\s+", " ");
+              fieldValue = fieldValue.toLowerCase();
+              List<String> keyPhrases = entry.getValue();
+              // For every keyword in the phrases for this field...
+              for (int i = 0; i < keyPhrases.size(); i++) {
+                String keyPhrase = keyPhrases.get(i);
+                if (keyPhrase != null && keyPhrase.length() > 0) {
+                  int matchIndex = fieldValue.indexOf(keyPhrase);
+                  if (matchIndex >= 0) {
+                    reject = "Field " + fieldName + " contains " + keyPhrase;
+                    return reject;
+                  }
+                }
+              }
+            }
+          }
+          // End of loop through every keyword and every value for this field.
+        }
+      }
+    }
+
+    return reject;
   }
 
   /**
@@ -316,6 +399,11 @@ public class CriteriaIndexer implements IndexingFilter {
    */
   public void setConf(Configuration conf) {
     this.conf = conf;
+    String value = conf.get("index.criteria.filters", null);
+    if (value != null) {
+      LOG.debug("Parsing index.criteria.filters property");
+      this.parseConf(value);
+    }
   }
 
   /**
@@ -326,7 +414,67 @@ public class CriteriaIndexer implements IndexingFilter {
   }
 
   /**
-   * Used to sort anchors by length desciending
+   * Parse the property value into a set of key phrases by field.
+   *
+   * Format is
+   *
+   * field=phrase to check in one field
+   * or
+   * field1,field2,..=phrase to check in multiple fields
+   *
+   * Each phrase gets its own line.
+   * The phase is case-insensitive.
+   * Punctuation is removed from the string.
+   * Whitespace is normalized.
+   *
+   * The results are store in FIELD_FILTER
+   * which is keyed by field and contains
+   * a list of key phrases to check in that field.
+   *
+   * @param propertyValue
+   */
+  private void parseConf(String propertyValue) {
+    if (propertyValue == null || propertyValue.trim().length() == 0) {
+      return;
+    }
+
+    // Split the property into lines
+    Matcher lineMatcher = LINE_SPLIT.matcher(propertyValue);
+    while (lineMatcher.find()) {
+      String line = lineMatcher.group();
+      if (line != null && line.length() > 0) {
+
+        // Split the line into field and value. Delimiter is '='.
+        Matcher nameValueMatcher = NAME_VALUE_SPLIT.matcher(line.trim());
+        if (nameValueMatcher.find()) {
+          String fieldName = nameValueMatcher.group(1).trim();
+          String value = nameValueMatcher.group(2);
+          if (fieldName != null && value != null) {
+            String[] fieldNames = fieldName.split(",");
+            if (value.length() > 0) {
+              for (int i = 0; i < fieldNames.length; i++) {
+                fieldName = fieldNames[i].trim();
+                List<String> filters = FIELD_FILTER.get(fieldName);
+                if (filters == null) {
+                  filters = new ArrayList<String>();
+                }
+                value = value.replaceAll("\\p{Punct}", " ");
+                value = value.replaceAll("\\s+", " ");
+                value = value.toLowerCase().trim();
+                if (value.length() > 0) {
+                  filters.add(value);
+                  FIELD_FILTER.put(fieldName, filters);
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Used to sort anchors by length descending
    */
   class compRev implements Comparator<Object> {
     public int compare(Object o1, Object o2) {
