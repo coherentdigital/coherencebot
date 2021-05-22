@@ -497,15 +497,13 @@ public class S3IndexWriter implements IndexWriter {
     }
 
     // Add each field of this Nutch doc to a JSON representation according to
-    // the
-    // template.
+    // the template.
     // NutchDocuments are flat key=value, or key=array, but the template schema
     // may be nested.
     // So this section of code builds a nested object from a template with empty
     // values.
     // It then hydrates it by finding the object with the desired path in the
-    // template
-    // and then pasting in the value from the flat NutchDocument.
+    // template and then pasting in the value from the flat NutchDocument.
     //
     // Field names in the NutchDocument have been mapped to the template schema
     // field.
@@ -558,8 +556,15 @@ public class S3IndexWriter implements IndexWriter {
                 LOG.warn(
                     "Attempt to put a multi-valued Nutch field into a scalar attribute: "
                         + key + " into " + objKey
-                        + ", saving first elem only.");
-                jo.put(objKey, values.get(0));
+                        + ", concatenating elems.");
+                StringBuilder sb = new StringBuilder();
+                for (int i = 0; i < values.size(); i++) {
+                  if (sb.length() > 0) {
+                    sb.append("; ");
+                  }
+                  sb.append(values.get(i));
+                }
+                jo.put(objKey, sb.toString());
               }
             }
           } else {

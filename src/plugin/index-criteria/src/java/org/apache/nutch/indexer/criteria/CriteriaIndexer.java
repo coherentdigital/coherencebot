@@ -142,8 +142,8 @@ public class CriteriaIndexer implements IndexingFilter {
       // Remove non-printable chars
       cleanHeading = cleanHeading.replaceAll("\\p{C}", "");
       // Shorten to max length and trim.
-      cleanHeading = cleanHeading
-          .substring(0, Math.min(cleanHeading.length(), maxLength)).trim();
+      cleanHeading = removeExt(cleanHeading
+          .substring(0, Math.min(cleanHeading.length(), maxLength)).trim());
     }
 
     // Make a cleanTitle
@@ -321,6 +321,7 @@ public class CriteriaIndexer implements IndexingFilter {
     switch (suffix) {
     case "doc":
     case "docx":
+    case "dvi":
     case "htm":
     case "html":
     case "key":
@@ -329,7 +330,9 @@ public class CriteriaIndexer implements IndexingFilter {
     case "pdf":
     case "pps":
     case "ppt":
+    case "pptm":
     case "pptx":
+    case "qxd":
     case "rtf":
     case "tex":
     case "txt":
