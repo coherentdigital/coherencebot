@@ -20,6 +20,7 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.StringWriter;
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -32,6 +33,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.nutch.metadata.Metadata;
 import org.apache.nutch.parse.HTMLMetaTags;
 import org.apache.nutch.parse.HtmlParseFilter;
+import org.apache.nutch.parse.Parse;
 import org.apache.nutch.parse.ParseResult;
 import org.apache.nutch.protocol.Content;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -66,6 +68,10 @@ public class HeadingsParser implements HtmlParseFilter {
   private static final Logger LOG = LoggerFactory
       .getLogger(MethodHandles.lookup().lookupClass());
 
+  // An array of language codes that use Right to Left script.
+  private static String[] rtlLangs = {"ar", "dv", "fa", "ha", "he", "ks", "ps", "ur", "yi"};
+  private static List<String> rtlList = new ArrayList<String>(Arrays.asList(rtlLangs));
+
   private Configuration conf;
 
   @Override
@@ -89,9 +95,21 @@ public class HeadingsParser implements HtmlParseFilter {
         parser.writeText(document, writer);
         String output = writer.toString();
 
+        Parse parse = parseResult.get(content.getUrl());
+        Metadata parseMeta = parse.getData().getParseMeta();
+        String sourceLang = parseMeta.get(Metadata.LANGUAGE);
+
         // extract top headings
         String heading = getHeading(output);
         if (heading != null && heading.length() > 0) {
+          // If the text is RTL, we have to reverse the string.
+          if (sourceLang != null) {
+            sourceLang = sourceLang.toLowerCase();
+            if (rtlList.contains(sourceLang)) {
+              LOG.info("reversing extracted heading for RTL display");
+              heading = reverse(heading);
+            }
+          }
           LOG.debug("HeadingParser produced heading " + heading);
           // Suffix heading with a rubric so later we can tell where it came
           // from.
@@ -201,6 +219,18 @@ public class HeadingsParser implements HtmlParseFilter {
       }
     }
     return sb.toString();
+  }
+
+  /**
+   * Reverse an rtl string.
+   *
+   * @param text
+   * @return the reversed string
+   */
+  private String reverse(String text) {
+    StringBuilder sb = new StringBuilder();
+    sb.append(text);
+    return sb.reverse().toString();
   }
 
   @Override

@@ -66,6 +66,7 @@ public class TextSummarizer implements IndexingFilter {
       summary = summaryTool.createSummary(MAX_SUMMARY_LENGTH);
 
       if (summary.length() > 0) {
+        summary = clean(summary);
         doc.add("summary", summary);
       }
     }
@@ -128,6 +129,25 @@ public class TextSummarizer implements IndexingFilter {
     doc.add("anchorLength", Integer.valueOf(anchorLength));
 
     return doc;
+  }
+
+  /**
+   * Remove undesirable junk from a text summary.
+   *
+   * @param text
+   * @return
+   */
+  private String clean(String text) {
+    String returnText = text;
+    if (text != null && text.length() > 0) {
+      // Remove links from summaries
+      returnText = returnText.replaceAll("https?://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]", " ");
+      // Remove non-printable characters from summaries
+      returnText = returnText.replaceAll("\\p{C}", " ");
+      // Compress white space
+      returnText = returnText.replaceAll("\\s+", " ").trim();
+    }
+    return returnText;
   }
 
   public void setConf(Configuration conf) {

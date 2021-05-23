@@ -757,7 +757,7 @@ public class S3IndexWriter implements IndexWriter {
             this.validator == null ? "" : this.validator));
     properties.put(S3Constants.INVALID_FOLDER,
         new AbstractMap.SimpleEntry<>(
-            "The S3 folfer to store invalid results in",
+            "The S3 folder to store invalid results in",
             this.s3InvalidFolder == null ? "" : this.s3InvalidFolder));
     properties.put(S3Constants.AWS_ACCESS_KEY_ID, new AbstractMap.SimpleEntry<>(
         "The AWS Access Key ID for accessing the bucket",

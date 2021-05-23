@@ -100,6 +100,25 @@ public class CriteriaIndexer implements IndexingFilter {
       doc.add("author", authors);
     }
 
+    // Goal: Point the artifact at the best HTML page that points at this PDF.
+    String artifactUrl = bestInlink(doc);
+    if (artifactUrl != null) {
+      doc.add("referrer_url", artifactUrl);
+    } else {
+      // If there are no inlinks, the file URL will be the artifact url.
+      NutchField urlField = doc.getField("url");
+      if (urlField != null) {
+        List<Object> urls = urlField.getValues();
+        if (urls.size() > 0) {
+          Object urlObj = urls.get(0);
+          if (urlObj instanceof String) {
+            String referrer = (String) urlObj;
+            doc.add("referrer_url", referrer);
+          }
+        }
+      }
+    }
+
     String rejectReason = filterTest(doc);
 
     if (rejectReason != null) {
@@ -286,6 +305,35 @@ public class CriteriaIndexer implements IndexingFilter {
       }
     }
     return null;
+  }
+
+  /**
+   * Determine the best InLink that exists for this document.
+   *
+   * We choose the shortest of the inlinks (if available).
+   * Otherwise we return null.
+   *
+   * @param source
+   * @return null if no inlinks, otherwise the best.
+   */
+  private String bestInlink(NutchDocument source) {
+    String bestInlink = null;
+
+    NutchField inlinkFields = source.getField("inlinks");
+    if ( inlinkFields != null) {
+      List<Object> inlinks = inlinkFields.getValues();
+
+      for (Object inlinkObj : inlinks) {
+        if (inlinkObj instanceof String) {
+          String inlinkStr = (String) inlinkObj;
+          if (inlinkStr.length() > 0 && (bestInlink == null || inlinkStr.length() < bestInlink.length() )) {
+            bestInlink = inlinkStr;
+          }
+        }
+      }
+    }
+
+    return bestInlink;
   }
 
   /**
