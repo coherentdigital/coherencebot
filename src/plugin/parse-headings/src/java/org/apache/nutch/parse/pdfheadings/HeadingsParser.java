@@ -42,6 +42,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.DocumentFragment;
 
+import com.ibm.icu.text.Normalizer2;
+
 /**
  * This parse filter uses PdfBox to extract the first three major headings from
  * the raw content.
@@ -106,8 +108,15 @@ public class HeadingsParser implements HtmlParseFilter {
           if (sourceLang != null) {
             sourceLang = sourceLang.toLowerCase();
             if (rtlList.contains(sourceLang)) {
-              LOG.info("reversing extracted heading for RTL display");
               heading = reverse(heading);
+              // Some scripts (eg Arabic) have 'Presentation' glyphs.
+              // This checks if normalization is required and converts it into a form called
+              // 'Compatibility Decomposition, followed by Canonical Composition'.
+              // See: https://docs.oracle.com/javase/tutorial/i18n/text/normalizerapi.html
+              Normalizer2 normalizer = Normalizer2.getNFKCInstance();
+              if (!normalizer.isNormalized(heading)) {
+                heading = normalizer.normalize(heading);
+              }
             }
           }
           LOG.debug("HeadingParser produced heading " + heading);
