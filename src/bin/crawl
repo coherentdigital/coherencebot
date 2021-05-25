@@ -35,6 +35,7 @@
 #                                         m for minute, h for hour and d for day. If no suffix is
 #                                         specified second is used by default. [default: -1]
 #   -s <seed_dir>                         Path to seeds file(s)
+#   -f|--feed                             Injects new seed URLs from an API every iteration"
 #   -sm <sitemap_dir>                     Path to sitemap URL file(s)
 #
 #   --hostdbupdate                        Boolean indicator if we call hostdbupdate or not
@@ -94,6 +95,7 @@ function __print_usage {
   echo -e "  \t\t\t\t\tm for minute, h for hour and d for day. If no suffix is"
   echo -e "  \t\t\t\t\tspecified second is used by default. [default: -1]"
   echo -e "  -s <seed_dir>\t\t\t\tPath to seeds file(s)"
+  echo -e "  -f|--feed\t\t\t\tInjects new seed URLs from an API every iteration"
   echo -e "  -sm <sitemap_dir>\t\t\tPath to sitemap URL file(s)"
   echo -e "  --hostdbupdate\t\t\tBoolean flag showing if we either update or not update hostdb for each round"
   echo -e "  --hostdbgenerate\t\t\tBoolean flag showing if we use hostdb in generate or not"
@@ -121,6 +123,7 @@ HOSTDBGENERATE=false
 HADOOP_PROPERTIES=()
 WAIT=-1 # don't wait if there are no URLs to fetch
 SEEDDIR=""
+FEEDFLAG=false
 NUM_FETCHERS=1
 NUM_TASKS=2 # 2 x NUM_FETCHERS
 SIZE_FETCHLIST=50000 # 25K x NUM_TASKS
@@ -143,6 +146,10 @@ do
         -s)
             SEEDDIR="${2}"
             shift 2
+            ;;
+        -f|--feed)
+            FEEDFLAG=true
+            shift
             ;;
         -sm)
             SITEMAPDIR="${2}"
@@ -314,6 +321,11 @@ do
     echo `date` ": Iteration $a of $LIMIT"
   else
     echo `date` ": Iteration $a"
+  fi
+
+  if $FEEDFLAG; then
+      echo "Injecting seed URLs from feed"
+      __bin_nutch feedinject "${commonOptions[@]}" "$CRAWL_PATH"/crawldb
   fi
 
   if [[ "$SITEMAPS_FROM_HOSTDB_FREQUENCY" = "always" || ("$SITEMAPS_FROM_HOSTDB_FREQUENCY" = "once" && $a -eq 1) ]]; then

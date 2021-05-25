@@ -80,6 +80,10 @@ public class CriteriaIndexer implements IndexingFilter {
     }
     // Choose the best title from title, heading and anchor.
     String[] bestTitleResponse = bestTitle(doc);
+    if (bestTitleResponse[0] == null || bestTitleResponse[0].trim().length() == 0) {
+      LOG.warn("No title for " + url.toString() + ", skipping");
+      return null;
+    }
     doc.removeField("title");
     doc.add("title", bestTitleResponse[0]);
     doc.removeField("titleAlgorithm");
