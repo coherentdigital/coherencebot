@@ -310,32 +310,65 @@ public class CriteriaIndexer implements IndexingFilter {
   /**
    * Determine the best InLink that exists for this document.
    *
-   * We choose the shortest of the inlinks (if available).
-   * Otherwise we return null.
+   * We choose an inlink within a publication or report section (if named so in a path)
+   * or the longest of the inlinks.  Otherwise we return null.
    *
    * @param source
    * @return null if no inlinks, otherwise the best.
    */
   private String bestInlink(NutchDocument source) {
-    String bestInlink = null;
+    String bestInLink = null;
+    String longestInLink = null;
+    String[] publicationKeywords = {"publ", "report", "article", "brief"};
 
     NutchField inlinkFields = source.getField("inlinks");
     if ( inlinkFields != null) {
       List<Object> inlinks = inlinkFields.getValues();
 
-      for (Object inlinkObj : inlinks) {
-        if (inlinkObj instanceof String) {
-          String inlinkStr = (String) inlinkObj;
-          if (inlinkStr.length() > 0 && (bestInlink == null || inlinkStr.length() < bestInlink.length() )) {
-            bestInlink = inlinkStr;
+      for (Object inLinkObj : inlinks) {
+        if (inLinkObj instanceof String) {
+          String inLinkStr = (String) inLinkObj;
+          if (inLinkStr.trim().length() == 0) {
+            continue;
+          } else if (inLinkStr.toLowerCase().indexOf(".pdf") > 0) {
+            // Do use references from other PDFs as the referrer.
+            continue;
+          }
+          if (containsAny(inLinkStr, publicationKeywords) &&
+              (bestInLink == null || inLinkStr.length() > bestInLink.length() )) {
+            bestInLink = inLinkStr;
+          }
+          if (longestInLink == null || inLinkStr.length() > longestInLink.length() ) {
+            longestInLink = inLinkStr;
           }
         }
       }
     }
 
-    return bestInlink;
+    if (longestInLink != null && bestInLink == null) {
+      bestInLink = longestInLink;
+    }
+
+    return bestInLink;
   }
 
+  /**
+   * Check if a string contains any of the provided keywords.
+   *
+   * @param input
+   * @param keywords
+   * @return
+   */
+  private boolean containsAny(String input, String[] keywords) {
+    if (input != null && input.length() > 0 && keywords.length > 0) {
+      for (String keyword : keywords) {
+        if (input.toLowerCase().indexOf(keyword) > -1) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
   /**
    * Remove an extension from a string for file names. Used in title cleaning
    * because titles in PDFs are often file names.
