@@ -25,6 +25,8 @@ import org.apache.nutch.indexer.NutchField;
 import org.apache.nutch.parse.Parse;
 import org.apache.hadoop.io.Text;
 
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -109,17 +111,45 @@ public class CriteriaIndexer implements IndexingFilter {
     if (artifactUrl != null) {
       doc.add("referrer_url", artifactUrl);
     } else {
-      // If there are no inlinks, the file URL will be the artifact url.
-      NutchField urlField = doc.getField("url");
-      if (urlField != null) {
-        List<Object> urls = urlField.getValues();
-        if (urls.size() > 0) {
-          Object urlObj = urls.get(0);
-          if (urlObj instanceof String) {
-            String referrer = (String) urlObj;
-            doc.add("referrer_url", referrer);
+      // If there are no inlinks, and the depth is not 1 (a direct request to ingest a PDF),
+      // we will defer publishing this URL.
+      NutchField depthField = doc.getField("_depth_");
+      int depth = 0;
+      if (depthField != null) {
+        List<Object> depths = depthField.getValues();
+        if (depths.size() > 0) {
+          Object depthObj = depths.get(0);
+          if (depthObj instanceof String) {
+            String depthStr = (String) depthObj;
+            try {
+              depth = Integer.parseInt(depthStr);
+            } catch (NumberFormatException nfe) {
+              // Swallow
+            }
           }
         }
+      }
+      if (depth == 1) {
+        NutchField urlField = doc.getField("url");
+        if (urlField != null) {
+          List<Object> urls = urlField.getValues();
+          if (urls.size() > 0) {
+            Object urlObj = urls.get(0);
+            if (urlObj instanceof String) {
+              String referrer = (String) urlObj;
+              doc.add("referrer_url", referrer);
+            }
+          }
+        }
+      } else {
+        // Note: when we reject this document for lack of sufficient inlinks
+        // the desire is that it be given another opportunity when its inlinks change.
+        // The question is whether we can achieve this without waiting for a
+        // new fetch to be triggered via expiry (30 days).  For now, I dont know
+        // how to achieve this modification of CrawlDatum in an index filter
+        // in a way that it will be persisted.  So for now, this doc will just have to wait.
+        LOG.info("Rejecting document: PDF at depth " + depth + " has no usable inlink");
+        return null;
       }
     }
 
@@ -315,7 +345,7 @@ public class CriteriaIndexer implements IndexingFilter {
    * Determine the best InLink that exists for this document.
    *
    * We choose an inlink within a publication or report section (if named so in a path)
-   * or the longest of the inlinks.  Otherwise we return null.
+   * or the longest of the inlinks.  The home page is not selected  Otherwise we return null.
    *
    * @param source
    * @return null if no inlinks, otherwise the best.
@@ -338,12 +368,23 @@ public class CriteriaIndexer implements IndexingFilter {
             // Do use references from other PDFs as the referrer.
             continue;
           }
-          if (containsAny(inLinkStr, publicationKeywords) &&
-              (bestInLink == null || inLinkStr.length() > bestInLink.length() )) {
-            bestInLink = inLinkStr;
-          }
-          if (longestInLink == null || inLinkStr.length() > longestInLink.length() ) {
-            longestInLink = inLinkStr;
+          try {
+            // Determine if the inLink has a path element more substantial than '/'.
+            // We want to avoid using the site home page as a destination for viewing the PDF.
+            URL inLinkUrl = new URL(inLinkStr);
+            String path = inLinkUrl.getPath();
+            boolean isInSubdir = (path != null && path.length() > 1);
+            if (isInSubdir) {
+              if (containsAny(inLinkStr, publicationKeywords) &&
+                  (bestInLink == null || inLinkStr.length() > bestInLink.length() )) {
+                bestInLink = inLinkStr;
+              }
+              if (longestInLink == null || inLinkStr.length() > longestInLink.length()) {
+                longestInLink = inLinkStr;
+              }
+            }
+          } catch (MalformedURLException mue) {
+            // Ignore this inlink, it wont even parse into a URL.
           }
         }
       }

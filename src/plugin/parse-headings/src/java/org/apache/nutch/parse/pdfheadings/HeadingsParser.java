@@ -141,15 +141,15 @@ public class HeadingsParser implements HtmlParseFilter {
 
         // Extract Last-Modified to parse meta.
         // Override the web-based Last-Modified with PDFParser's
-        // Created-Date or Last-Modified date.
+        // Created Date or Modified date.
         // This ensures PDF info (if provided) is used as a source of date.
-        String lastModified = metaTags.getGeneralTags().get("created");
+        String lastModified = metaTags.getGeneralTags().get("pdf:docinfo:created");
         if (lastModified == null) {
-          lastModified = metaTags.getGeneralTags().get("modified");
+          lastModified = metaTags.getGeneralTags().get("pdf:docinfo:modified");
         }
         if (lastModified != null) {
           parseResult.get(content.getUrl()).getData().getParseMeta()
-              .set("Last-Modified", lastModified);
+              .set("pdf_published", lastModified);
         }
       }
     } catch (Exception e) {
