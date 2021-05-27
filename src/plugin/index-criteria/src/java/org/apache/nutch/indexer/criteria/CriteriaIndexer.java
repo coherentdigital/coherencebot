@@ -270,6 +270,54 @@ public class CriteriaIndexer implements IndexingFilter {
       }
     }
 
+    // If we have a heading and an anchor, choose one of these.
+    if (cleanAnchor != null && cleanHeading != null) {
+      // Prepare normalized variants for matching and analysis.
+      String matchAnchor = cleanAnchor;
+      String matchHeading = cleanHeading;
+
+      matchAnchor = matchAnchor.replaceAll("\\p{Punct}", " ").trim();
+      matchHeading = matchHeading.replace(" [" + headingAlgorithm + "]", "");
+      matchHeading = matchHeading.replaceAll("\\p{Punct}", " ").trim();
+
+      long aUpper = matchAnchor.chars().filter((s) -> Character.isUpperCase(s))
+          .count();
+      long aLower = matchAnchor.chars().filter((s) -> Character.isLowerCase(s))
+          .count();
+      long hUpper = matchHeading.chars().filter((s) -> Character.isUpperCase(s))
+          .count();
+      long hLower = matchHeading.chars().filter((s) -> Character.isLowerCase(s))
+          .count();
+      int aWords = matchAnchor.split("\\s+").length;
+      int hWords = matchHeading.split("\\s+").length;
+      int wordDiff = aWords - hWords;
+
+      if (matchAnchor.equals(matchHeading)) {
+        String[] returnValue = { cleanAnchor, anchorAlgorithm };
+        return returnValue;
+      }
+
+      // If we have a reasonably long anchor with spaces and a mix of upper and
+      // lower, return that.
+      if (aWords > 7 && aUpper > 0 && aLower > 5) {
+        String[] returnValue = { cleanAnchor, anchorAlgorithm };
+        return returnValue;
+      }
+      if (hWords > 7 && hUpper > 0 && hLower > 5) {
+        String[] returnValue = { cleanHeading, headingAlgorithm };
+        return returnValue;
+      }
+
+      // Return the longer
+      if (wordDiff > 0) {
+        String[] returnValue = { cleanAnchor, anchorAlgorithm };
+        return returnValue;
+      } else {
+        String[] returnValue = { cleanHeading, headingAlgorithm };
+        return returnValue;
+      }
+    }
+
     if (cleanHeading != null && cleanHeading.length() > 0) {
       String[] returnValue = { cleanHeading, headingAlgorithm };
       return returnValue;
