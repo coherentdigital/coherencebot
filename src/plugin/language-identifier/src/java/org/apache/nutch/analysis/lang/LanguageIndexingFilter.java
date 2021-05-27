@@ -66,17 +66,17 @@ public class LanguageIndexingFilter implements IndexingFilter {
     // check if LANGUAGE found, possibly put there by HTMLLanguageParser
     String lang = parse.getData().getParseMeta().get(Metadata.LANGUAGE);
 
-    // check if HTTP-header tels us the language
+    // check if HTTP-header tells us the language
     if (lang == null) {
       lang = parse.getData().getContentMeta().get(Response.CONTENT_LANGUAGE);
     }
 
-    if (lang == null || lang.length() == 0) {
-      lang = "unknown";
-    }
-
     if (!indexLangs.isEmpty() && !indexLangs.contains(lang)) {
       return null;
+    }
+
+    if (lang.length() > 2) {
+      lang = lang.substring(0,2);
     }
 
     doc.add("lang", lang);
