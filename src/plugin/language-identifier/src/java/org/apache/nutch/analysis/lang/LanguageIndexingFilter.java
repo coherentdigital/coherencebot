@@ -75,11 +75,12 @@ public class LanguageIndexingFilter implements IndexingFilter {
       return null;
     }
 
-    if (lang.length() > 2) {
-      lang = lang.substring(0,2);
+    if (lang != null) {
+      if (lang.length() > 2) {
+        lang = lang.substring(0,2);
+      }
+      doc.add("lang", lang);
     }
-
-    doc.add("lang", lang);
 
     return doc;
   }
