@@ -1,7 +1,11 @@
-./nutch index /crawl/crawldb/ -linkdb /crawl/linkdb/ /crawl/segments/20210204010012 -filter -normalize -deleteGone
-./nutch index /crawl/crawldb/ -linkdb /crawl/linkdb/ /crawl/segments/20210204011724 -filter -normalize -deleteGone
-./nutch index /crawl/crawldb/ -linkdb /crawl/linkdb/ /crawl/segments/20210204034433 -filter -normalize -deleteGone
-./nutch index /crawl/crawldb/ -linkdb /crawl/linkdb/ /crawl/segments/20210204121757 -filter -normalize -deleteGone
-./nutch index /crawl/crawldb/ -linkdb /crawl/linkdb/ /crawl/segments/20210216032718 -filter -normalize -deleteGone
-#./nutch index /crawl/crawldb/ -linkdb /crawl/linkdb/ /crawl/segments/20210217002617 -filter -normalize -deleteGone
-
+if [ $# -eq 0 ]
+    then
+       echo Provide the s3 bucket or hadoop folder containing the crawl.  eg s3://coherencebot
+       exit 1
+fi
+for SEGMENT in $(hadoop fs -ls $1/crawl/segments | cut -b 58-)
+do
+   echo Indexing $SEGMENT...
+   ./nutch index $1/crawl/crawldb/ -linkdb $1/crawl/linkdb/ $SEGMENT -filter -normalize -deleteGone
+done
+echo Finished reindexing.

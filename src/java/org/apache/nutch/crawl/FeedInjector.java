@@ -400,8 +400,8 @@ public class FeedInjector extends NutchTool implements Tool {
       while (seedFeedUrl != null) {
         // Connect to commons collection lookup service
         con = seedFeedUrl.openConnection();
-        con.setConnectTimeout(5000);
-        con.setReadTimeout(10000);
+        con.setConnectTimeout(10000);
+        con.setReadTimeout(30000);
         con.addRequestProperty("x-api-key", feedApiKey);
         con.connect();
 
