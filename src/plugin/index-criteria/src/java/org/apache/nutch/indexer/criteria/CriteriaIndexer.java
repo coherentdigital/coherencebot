@@ -29,7 +29,6 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -54,6 +53,8 @@ public class CriteriaIndexer implements IndexingFilter {
       Pattern.MULTILINE);
   private static Pattern NAME_VALUE_SPLIT = Pattern.compile("(.*?)=(.*)");
   private static Map<String, List<String>> FIELD_FILTER = new HashMap<String, List<String>>();
+  private static final String[] ANCHOR_FILTERS = {"pdf", "download", "click", "read more", "learn more", "full report", "thumbnail", "read the", "read it", "more information"};
+  private static final String[] PUB_SECTION_KEYWORDS = {"publ", "report", "article", "brief"};
 
   /**
    * The {@link CriteriaIndexer} filter object which selects documents as per
@@ -106,51 +107,10 @@ public class CriteriaIndexer implements IndexingFilter {
       doc.add("author", authors);
     }
 
-    // Goal: Point the artifact at the best HTML page that points at this PDF.
+    // Goal: Point the source at the best HTML page that points at this PDF.
     String artifactUrl = bestInlink(doc);
     if (artifactUrl != null) {
       doc.add("referrer_url", artifactUrl);
-    } else {
-      // If there are no inlinks, and the depth is not 1 (a direct request to ingest a PDF),
-      // we will defer publishing this URL.
-      NutchField depthField = doc.getField("_depth_");
-      int depth = 0;
-      if (depthField != null) {
-        List<Object> depths = depthField.getValues();
-        if (depths.size() > 0) {
-          Object depthObj = depths.get(0);
-          if (depthObj instanceof String) {
-            String depthStr = (String) depthObj;
-            try {
-              depth = Integer.parseInt(depthStr);
-            } catch (NumberFormatException nfe) {
-              // Swallow
-            }
-          }
-        }
-      }
-      if (depth == 1) {
-        NutchField urlField = doc.getField("url");
-        if (urlField != null) {
-          List<Object> urls = urlField.getValues();
-          if (urls.size() > 0) {
-            Object urlObj = urls.get(0);
-            if (urlObj instanceof String) {
-              String referrer = (String) urlObj;
-              doc.add("referrer_url", referrer);
-            }
-          }
-        }
-      } else {
-        // Note: when we reject this document for lack of sufficient inlinks
-        // the desire is that it be given another opportunity when its inlinks change.
-        // The question is whether we can achieve this without waiting for a
-        // new fetch to be triggered via expiry (30 days).  For now, I dont know
-        // how to achieve this modification of CrawlDatum in an index filter
-        // in a way that it will be persisted.  So for now, this doc will just have to wait.
-        LOG.info("Rejecting document: PDF at depth " + depth + " has no usable inlink");
-        return null;
-      }
     }
 
     String rejectReason = filterTest(doc);
@@ -211,16 +171,30 @@ public class CriteriaIndexer implements IndexingFilter {
 
     // Make a cleanAnchor
     if (source.getField("anchor") != null) {
-      // Anchors are muliply occurring
+      // Anchors are multiply occurring
       List<Object> anchorValues = source.getField("anchor").getValues();
-      // Sort by length desc.
-      Collections.sort(anchorValues, new compRev());
-      cleanAnchor = (String) anchorValues.get(0);
-      // Remove non-printable chars
-      cleanAnchor = cleanAnchor.replaceAll("\\p{C}", "");
-      // Shorten to max length and trim.
-      cleanAnchor = removeExt(cleanAnchor
-          .substring(0, Math.min(cleanAnchor.length(), maxLength)).trim());
+      for (Object valueObj : anchorValues) {
+        if (valueObj instanceof String) {
+          String anchorStr = (String) valueObj;
+          if (containsAny(anchorStr, ANCHOR_FILTERS)) {
+            continue;
+          }
+          if (anchorStr.indexOf(" ") == -1) {
+            // skip single word anchors
+            continue;
+          }
+          if (cleanAnchor == null || anchorStr.length() > cleanAnchor.length()) {
+            cleanAnchor = anchorStr;
+          }
+        }
+      }
+      if (cleanAnchor != null) {
+        // Remove non-printable chars
+        cleanAnchor = cleanAnchor.replaceAll("\\p{C}", "");
+        // Shorten to max length and trim.
+        cleanAnchor = removeExt(cleanAnchor
+            .substring(0, Math.min(cleanAnchor.length(), maxLength)).trim());
+      }
     }
 
     // If we have a title and a heading, choose one of these.
@@ -401,7 +375,6 @@ public class CriteriaIndexer implements IndexingFilter {
   private String bestInlink(NutchDocument source) {
     String bestInLink = null;
     String longestInLink = null;
-    String[] publicationKeywords = {"publ", "report", "article", "brief"};
 
     NutchField inlinkFields = source.getField("inlinks");
     if ( inlinkFields != null) {
@@ -423,7 +396,7 @@ public class CriteriaIndexer implements IndexingFilter {
             String path = inLinkUrl.getPath();
             boolean isInSubdir = (path != null && path.length() > 1);
             if (isInSubdir) {
-              if (containsAny(inLinkStr, publicationKeywords) &&
+              if (containsAny(inLinkStr, PUB_SECTION_KEYWORDS) &&
                   (bestInLink == null || inLinkStr.length() > bestInLink.length() )) {
                 bestInLink = inLinkStr;
               }
@@ -454,8 +427,9 @@ public class CriteriaIndexer implements IndexingFilter {
    */
   private boolean containsAny(String input, String[] keywords) {
     if (input != null && input.length() > 0 && keywords.length > 0) {
+      String testInput = input.toLowerCase();
       for (String keyword : keywords) {
-        if (input.toLowerCase().indexOf(keyword) > -1) {
+        if (testInput.indexOf(keyword) > -1) {
           return true;
         }
       }
