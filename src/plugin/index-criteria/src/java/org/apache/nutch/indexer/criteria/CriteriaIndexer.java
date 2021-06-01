@@ -450,7 +450,7 @@ public class CriteriaIndexer implements IndexingFilter {
     }
     String returnStr = input.trim();
     String[] parts = input.trim().split("\\.");
-    if (parts.length == 1) {
+    if (parts.length <= 1) {
       return returnStr;
     }
 

@@ -305,7 +305,7 @@ public class S3IndexWriter implements IndexWriter {
         // Remove any zero-length string.
         String str = (String) obj;
         if (str.trim().length() > 0) {
-          if ("url".equalsIgnoreCase(key)) {
+          if ("url".equalsIgnoreCase(key) || "uri".equalsIgnoreCase(key)) {
             String urlStr = escapeIllegalUrlCharacters(str);
             jReturn.put(key, urlStr);
           } else {
@@ -702,6 +702,7 @@ public class S3IndexWriter implements IndexWriter {
       // re-encoded to %25 and we don't want re-encoding, just encoding
       URL newUrl = new URL(uri.toString().replace("%25", "%"));
       newUrlStr = newUrl.toString();
+      newUrlStr = newUrlStr.replace(" ", "%20");
       if (!newUrlStr.equals(toEscape)) {
         LOG.info("Refactored " + toEscape + " to " + newUrlStr);
       }
