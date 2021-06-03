@@ -237,6 +237,7 @@
       <packageset dir="${plugins.dir}/parse-zip/src/java"/>
       <packageset dir="${plugins.dir}/parsefilter-debug/src/java"/>
       <packageset dir="${plugins.dir}/parsefilter-naivebayes/src/java"/>
+      <packageset dir="${plugins.dir}/parsefilter-outlinks/src/java"/>
       <packageset dir="${plugins.dir}/parsefilter-regex/src/java"/>
       <packageset dir="${plugins.dir}/protocol-file/src/java"/>
       <packageset dir="${plugins.dir}/protocol-ftp/src/java"/>
@@ -257,6 +258,7 @@
       <packageset dir="${plugins.dir}/text-summarizer/src/java"/>
       <packageset dir="${plugins.dir}/tld/src/java"/>
       <packageset dir="${plugins.dir}/urlfilter-automaton/src/java"/>
+      <packageset dir="${plugins.dir}/urlfilter-descendants/src/java"/>
       <packageset dir="${plugins.dir}/urlfilter-domain/src/java"/>
       <packageset dir="${plugins.dir}/urlfilter-domaindenylist/src/java"/>
       <packageset dir="${plugins.dir}/urlfilter-fast/src/java"/>
@@ -777,6 +779,7 @@
       <packageset dir="${plugins.dir}/parse-zip/src/java"/>
       <packageset dir="${plugins.dir}/parsefilter-debug/src/java"/>
       <packageset dir="${plugins.dir}/parsefilter-naivebayes/src/java"/>
+      <packageset dir="${plugins.dir}/parsefilter-outlinks/src/java"/>
       <packageset dir="${plugins.dir}/parsefilter-regex/src/java"/>
       <packageset dir="${plugins.dir}/protocol-file/src/java"/>
       <packageset dir="${plugins.dir}/protocol-ftp/src/java"/>
@@ -797,6 +800,7 @@
       <packageset dir="${plugins.dir}/text-summarizer/src/java"/>
       <packageset dir="${plugins.dir}/tld/src/java"/>
       <packageset dir="${plugins.dir}/urlfilter-automaton/src/java"/>
+      <packageset dir="${plugins.dir}/urlfilter-descendants/src/java"/>
       <packageset dir="${plugins.dir}/urlfilter-domain/src/java"/>
       <packageset dir="${plugins.dir}/urlfilter-domaindenylist/src/java"/>
       <packageset dir="${plugins.dir}/urlfilter-fast/src/java"/>
@@ -1292,6 +1296,7 @@
         <source path="${plugins.dir}/parse-zip/src/test/" />
         <source path="${plugins.dir}/parsefilter-debug/src/java/" />
         <source path="${plugins.dir}/parsefilter-naivebayes/src/java/" />
+        <source path="${plugins.dir}/parsefilter-outlinks/src/java/" />
         <source path="${plugins.dir}/parsefilter-regex/src/java/" />
         <source path="${plugins.dir}/parsefilter-regex/src/test/" />
         <source path="${plugins.dir}/protocol-file/src/java/" />
@@ -1322,6 +1327,7 @@
         <source path="${plugins.dir}/tld/src/java/" />
         <source path="${plugins.dir}/urlfilter-automaton/src/java/" />
         <source path="${plugins.dir}/urlfilter-automaton/src/test/" />
+        <source path="${plugins.dir}/urlfilter-descendants/src/java/" />
         <source path="${plugins.dir}/urlfilter-domain/src/java/" />
         <source path="${plugins.dir}/urlfilter-domain/src/test/" />
         <source path="${plugins.dir}/urlfilter-domaindenylist/src/java/" />

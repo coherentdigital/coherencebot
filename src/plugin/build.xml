@@ -75,6 +75,7 @@
     <ant dir="parse-zip" target="deploy"/>
     <ant dir="parsefilter-debug" target="deploy"/>
     <ant dir="parsefilter-naivebayes" target="deploy"/>
+    <ant dir="parsefilter-outlinks" target="deploy"/>
     <ant dir="parsefilter-regex" target="deploy"/>
     <ant dir="protocol-file" target="deploy"/>
     <ant dir="protocol-ftp" target="deploy"/>
@@ -95,6 +96,7 @@
     <ant dir="text-summarizer" target="deploy"/>
     <ant dir="tld" target="deploy"/>
     <ant dir="urlfilter-automaton" target="deploy"/>
+    <ant dir="urlfilter-descendants" target="deploy" />
     <ant dir="urlfilter-domain" target="deploy" />
     <ant dir="urlfilter-domaindenylist" target="deploy" />
     <ant dir="urlfilter-fast" target="deploy"/>
@@ -236,6 +238,7 @@
     <ant dir="parse-zip" target="clean"/>
     <ant dir="parsefilter-debug" target="clean" />
     <ant dir="parsefilter-naivebayes" target="clean" />
+    <ant dir="parsefilter-outlinks" target="clean" />
     <ant dir="parsefilter-regex" target="clean"/>
     <ant dir="protocol-file" target="clean"/>
     <ant dir="protocol-ftp" target="clean"/>
@@ -256,6 +259,7 @@
     <ant dir="text-summarizer" target="clean"/>
     <ant dir="tld" target="clean"/>
     <ant dir="urlfilter-automaton" target="clean"/>
+    <ant dir="urlfilter-descendants" target="clean" />
     <ant dir="urlfilter-domain" target="clean" />
     <ant dir="urlfilter-domaindenylist" target="clean" />
     <ant dir="urlfilter-fast" target="clean"/>

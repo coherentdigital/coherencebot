@@ -665,6 +665,34 @@
 </property>
 
 <property>
+  <name>db.descendant.links</name>
+  <value>false</value>
+  <description>If true, outlinks leading from a page to another section on internal
+  hosts will be ignored. This is an effective way to limit the crawl to include
+  only website sections defined by initially injected seeds, without creating
+  complex URLFilters.
+
+  The condition tested is the document url host+path is a prefix match of the outlink host+path.
+  Given a URL = https://x.y/section accept https://x.y/section/2
+  and https://x.y/section2 but not https://x.y/about
+
+  An exception is made for PDF documents (since this is the goal of CoherenceBot and its common for
+  PDFs to be served from a document directory that is different than the paths used for HTML)
+  If the outlink is to a PDF, then the only requirement is that the domain matches and the link
+  ends in .pdf.  Since we don't use PDF links as seeds, to get to this point the PDF referrer would have
+  to be a descendant of the seed, so at minimum the referrer would be a descendant and the PDF is same-domain.
+
+  Also may filter redirects unless the redirect location is also a prefix match of the link.
+  If a section moves, you will therefore have to update your seed URLs to include the new location.
+  Since links to outbound sites will fail the prefix match test, a setting of true cancels the
+  effect of db.ignore.external.links as well.
+
+  If false, no descendant link check is made.
+  See org.apache.nutch.crawl.LinkDB and org.apache.nutch.fetcher.FetcherThread
+  </description>
+</property>
+
+<property>
   <name>db.ignore.external.links</name>
   <value>false</value>
   <description>If true, outlinks leading from a page to external hosts or domain

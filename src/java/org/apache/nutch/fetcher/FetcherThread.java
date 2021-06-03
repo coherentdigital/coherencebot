@@ -94,6 +94,7 @@ public class FetcherThread extends Thread {
   private int redirectCount;
   private boolean ignoreInternalLinks;
   private boolean ignoreExternalLinks;
+  private boolean descendantLinks;
   private boolean ignoreAlsoRedirects;
   private String ignoreExternalLinksMode;
 
@@ -216,6 +217,7 @@ public class FetcherThread extends Thread {
     ignoreInternalLinks = conf.getBoolean("db.ignore.internal.links", false);
     ignoreExternalLinks = conf.getBoolean("db.ignore.external.links", false);
     ignoreAlsoRedirects = conf.getBoolean("db.ignore.also.redirects", true);
+    descendantLinks = conf.getBoolean("db.descendant.links", false);
     ignoreExternalLinksMode = conf.get("db.ignore.external.links.mode", "byHost");
     maxOutlinkDepth = conf.getInt("fetcher.follow.outlinks.depth", -1);
     outlinksIgnoreExternal = conf.getBoolean(
@@ -523,7 +525,7 @@ public class FetcherThread extends Thread {
       return null;
     }
 
-    if (ignoreAlsoRedirects && (ignoreExternalLinks || ignoreInternalLinks)) {
+    if (ignoreAlsoRedirects && (ignoreExternalLinks || ignoreInternalLinks || descendantLinks)) {
       try {
         URL origUrl = fit.u;
         URL redirUrl = new URL(newUrl);
@@ -551,6 +553,18 @@ public class FetcherThread extends Thread {
           if (origHost.equals(newHost)) {
             LOG.debug(
                 " - ignoring redirect {} from {} to {} because internal links are ignored",
+                redirType, urlString, newUrl);
+            return null;
+          }
+        }
+
+        if (descendantLinks) {
+          String origDomain = URLUtil.getDomainName(origUrl).toLowerCase();
+          String newDomain = URLUtil.getDomainName(redirUrl).toLowerCase();
+
+          if (!origDomain.equals(newDomain)) {
+            LOG.warn(
+                " - ignoring redirect {} from {} to {} because only same domain links are allowed",
                 redirType, urlString, newUrl);
             return null;
           }

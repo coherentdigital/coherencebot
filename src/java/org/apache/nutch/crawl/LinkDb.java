@@ -55,6 +55,7 @@ import org.apache.nutch.util.NutchConfiguration;
 import org.apache.nutch.util.NutchJob;
 import org.apache.nutch.util.NutchTool;
 import org.apache.nutch.util.TimingUtil;
+import org.apache.nutch.util.URLUtil;
 
 /** Maintains an inverted link map, listing incoming links for each url. */
 public class LinkDb extends NutchTool implements Tool {
@@ -64,6 +65,7 @@ public class LinkDb extends NutchTool implements Tool {
 
   public static final String IGNORE_INTERNAL_LINKS = "linkdb.ignore.internal.links";
   public static final String IGNORE_EXTERNAL_LINKS = "linkdb.ignore.external.links";
+  public static final String DESCENDANT_LINKS = "db.descendant.links";
 
   public static final String CURRENT_NAME = "current";
   public static final String LOCK_NAME = ".locked";
@@ -81,6 +83,7 @@ public class LinkDb extends NutchTool implements Tool {
     private int maxAnchorLength;
     private boolean ignoreInternalLinks;
     private boolean ignoreExternalLinks;
+    private boolean descendantLinks;
     private URLFilters urlFilters;
     private URLNormalizers urlNormalizers;
 
@@ -90,6 +93,7 @@ public class LinkDb extends NutchTool implements Tool {
       maxAnchorLength = conf.getInt("linkdb.max.anchor.length", 100);
       ignoreInternalLinks = conf.getBoolean(IGNORE_INTERNAL_LINKS, true);
       ignoreExternalLinks = conf.getBoolean(IGNORE_EXTERNAL_LINKS, false);
+      descendantLinks = conf.getBoolean(DESCENDANT_LINKS, false);
 
       if (conf.getBoolean(LinkDbFilter.URL_FILTERING, false)) {
         urlFilters = new URLFilters(conf);
@@ -138,6 +142,26 @@ public class LinkDb extends NutchTool implements Tool {
         } else if (ignoreExternalLinks) {
           String toHost = getHost(toUrl);
           if (toHost == null || !toHost.equals(fromHost)) { // external link skip it
+            continue;
+          }
+        } else if (descendantLinks) {
+          try {
+            String fromDomain = URLUtil.getDomainName(fromUrl).toLowerCase();
+            String toDomain = URLUtil.getDomainName(toUrl).toLowerCase();
+            String fromPath = new URL(fromUrl).getPath().toLowerCase();
+            String toPath = new URL(toUrl).getPath().toLowerCase();
+            String fromChk = fromDomain + fromPath;
+            String toChk = toDomain + toPath;
+
+            // Is the outlink not a descendant?
+            if (toChk.indexOf(fromChk) != 0) {
+              boolean isPdf = (toUrl.indexOf(".pdf") > 0) ? true : false;
+              // Handle the special case of PDFs from the same domain are allowed.
+              if (!(toDomain.equals(fromDomain) && isPdf)) { // not an allowed descendant link
+                continue;  // skip it
+              }
+            }
+          } catch (MalformedURLException mue) {
             continue;
           }
         }
