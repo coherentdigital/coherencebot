@@ -11,7 +11,10 @@ from pickle import NONE
 
 def main():
     """
-    Check Seed URLs coming from the Commons Collection API
+    Check Seed URLs coming from the Commons Collection API.
+    Cycles through the known clusters and then paginates through the seed list for each cluster.
+    Will automatically dump all validation errors to a tab-separated file
+    seed-errors-DATE-TIME.tsv with a URL, Collection UUID, Org Slug, Code and Message
     """
     default_endpoint = 'https://policycommons.net/api/collections/'
 
@@ -21,7 +24,6 @@ def main():
     parser.add_argument('-n', type=int, default=0, required=False, help="Stop after n requests")
     args = parser.parse_args()
     clusters = ["us-east-2", "eu-central-1", "ap-northeast-1"]
-    timestr = time.strftime("%Y%m%d-%H%M%S")
     timestr = time.strftime("%Y%m%d-%H%M%S")
     tsv_file = open('seed-errors-' + timestr + '.tsv', 'w')
     print("URL\tUUID\tOrg\tCode\tMessage",file=tsv_file)
@@ -100,6 +102,13 @@ def main():
 
 
 def get_seeds(collection_endpoint, cluster):
+    """ Return a page of seeds for a given cluster.
+
+    Returns the JSON response loaded into a Python object
+
+    collection_endpoint -- The API URL we will use.
+    cluster -- The cluster search param to use. If the collection_endpoint already has a querystring, this arg is ignored.
+    """
     params = {
         'sourcing': 'coherencebot',
         'cluster' : cluster
@@ -132,6 +141,24 @@ def get_seeds(collection_endpoint, cluster):
 
 
 def check_url(url):
+    """
+    Validate a URL for crawling purposes.  Checks also whether the site has blocked CoherenceBot.
+
+    Params:
+    url -- the URL to check.
+
+    Returns a tuple:
+    [isValid, code, message]
+
+    isValid -- True if the URL returns a 200 and is not blocked by robots exclusion, otherwise False
+    code -- the HTTP response code
+    message -- 'Accepted' if isValid, otherwise a response-code related message.
+        For redirects, this contains the Location provided by the site.
+
+    Note that many redirects can be successfully crawled, so not all 301's and 302's are invalid.
+    But the method returns isValid = False on any 3xx, 4xx or 5xx response code and its up to the
+    caller to decide whether to accept redirects.
+    """
     response_status = False
     response_code = 0
     response_msg = ""
@@ -140,7 +167,7 @@ def check_url(url):
         response = requests.head(url, timeout=30, allow_redirects=False)
         response_code = response.status_code
         if response_code == 200:
-            # We got a 2xx, now check for robot exclusion
+            # We got a 200, now check for robot exclusion
             parsed_uri = urlparse(url)
             robots_txt = '{uri.scheme}://{uri.netloc}/robots.txt'.format(uri=parsed_uri)
 
