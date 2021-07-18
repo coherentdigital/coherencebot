@@ -1958,6 +1958,23 @@ visit https://cwiki.apache.org/confluence/display/NUTCH/SimilarityScoringFilter 
   </description>
 </property>
 
+<property>
+  <name>scoring.ext.boost</name>
+  <value>10.0</value>
+  <description>The scoring boost to give URLs with desired extensions.
+  This can be used to boost PDFs in the Generator phase for example
+  </description>
+</property>
+
+<property>
+  <name>scoring.ext.extensions</name>
+  <value></value>
+  <description>a comma-separated list of URL extensions to boost (in lowercase).
+  This boost applies to the generator phase and allows certain URLs to get priority
+  boost by the generator.
+  </description>
+</property>
+
 <!-- language-identifier plugin properties -->
 
 <property>

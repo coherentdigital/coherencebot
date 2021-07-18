@@ -249,6 +249,7 @@
       <packageset dir="${plugins.dir}/protocol-selenium/src/java"/>
       <packageset dir="${plugins.dir}/publish-rabbitmq/src/java"/>
       <packageset dir="${plugins.dir}/scoring-depth/src/java"/>
+      <packageset dir="${plugins.dir}/scoring-ext/src/java"/>
       <packageset dir="${plugins.dir}/scoring-link/src/java"/>
       <packageset dir="${plugins.dir}/scoring-opic/src/java"/>
       <packageset dir="${plugins.dir}/scoring-orphan/src/java"/>
@@ -791,6 +792,7 @@
       <packageset dir="${plugins.dir}/protocol-selenium/src/java"/>
       <packageset dir="${plugins.dir}/publish-rabbitmq/src/java"/>
       <packageset dir="${plugins.dir}/scoring-depth/src/java"/>
+      <packageset dir="${plugins.dir}/scoring-ext/src/java"/>
       <packageset dir="${plugins.dir}/scoring-link/src/java"/>
       <packageset dir="${plugins.dir}/scoring-opic/src/java"/>
       <packageset dir="${plugins.dir}/scoring-orphan/src/java"/>
@@ -1313,6 +1315,7 @@
         <source path="${plugins.dir}/protocol-selenium/src/java"/>
         <source path="${plugins.dir}/publish-rabbitmq/src/java"/>
         <source path="${plugins.dir}/scoring-depth/src/java/" />
+        <source path="${plugins.dir}/scoring-ext/src/java/" />
         <source path="${plugins.dir}/scoring-link/src/java/" />
         <source path="${plugins.dir}/scoring-opic/src/java/" />
         <source path="${plugins.dir}/scoring-orphan/src/java"/>
