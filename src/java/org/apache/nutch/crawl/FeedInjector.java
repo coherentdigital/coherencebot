@@ -48,6 +48,7 @@ import org.apache.nutch.util.NutchJob;
 import org.apache.nutch.util.NutchTool;
 import org.apache.nutch.util.TimingUtil;
 import org.codehaus.jettison.json.JSONArray;
+import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -428,36 +429,41 @@ public class FeedInjector extends NutchTool implements Tool {
           JSONArray ja = jo.getJSONArray("results");
           if (ja.length() > 0) {
             for (int i = 0; i < ja.length(); i++) {
-              String seedUrl = null;
-              String collectionId = null;
-              String collectionTitle = null;
-              String collectionOrgId = null;
-              JSONObject collection = ja.getJSONObject(i);
-              if (collection.has("uuid")) {
-                collectionId = collection.getString("uuid");
-              }
-              if (collection.has("url")) {
-                seedUrl = collection.getString("url");
-              }
-              if (collection.has("title")) {
-                collectionTitle = collection.getString("title");
-              }
-              if (collection.has("org")) {
-                JSONObject org = collection.getJSONObject("org");
-                if (org.has("slug")) {
-                  collectionOrgId = org.getString("slug");
+              try {
+                String seedUrl = null;
+                String collectionId = null;
+                String collectionTitle = null;
+                String collectionOrgId = null;
+                JSONObject collection = ja.getJSONObject(i);
+                if (collection.has("uuid")) {
+                  collectionId = collection.getString("uuid");
                 }
-              }
-              if (seedUrl != null && collectionId != null
-                  && collectionTitle != null && collectionOrgId != null) {
-                // We have all the metadata
-                String seedFileLine = seedUrl + "\tcollection.title=" + collectionTitle
-                    + "\tcollection.id=" + collectionId + "\torg.slug="
-                    + collectionOrgId;
-                seedUrls.add(seedFileLine);
-              } else {
-                LOG.warn("Row " + i + " in " + seedFeedUrl.toString()
-                    + " is incomplete; ignoring.");
+                if (collection.has("url")) {
+                  seedUrl = collection.getString("url");
+                }
+                if (collection.has("title")) {
+                  collectionTitle = collection.getString("title");
+                }
+                if (collection.has("org")) {
+                  JSONObject org = collection.getJSONObject("org");
+                  if (org.has("slug")) {
+                    collectionOrgId = org.getString("slug");
+                  }
+                }
+                if (seedUrl != null && collectionId != null
+                    && collectionTitle != null && collectionOrgId != null) {
+                  // We have all the metadata
+                  String seedFileLine = seedUrl + "\tcollection.title=" + collectionTitle
+                      + "\tcollection.id=" + collectionId
+                      + "\tcollection.seed=" + seedUrl
+                      + "\torg.slug="+ collectionOrgId;
+                  seedUrls.add(seedFileLine);
+                } else {
+                  LOG.warn("Row " + i + " in " + seedFeedUrl.toString()
+                      + " is incomplete; ignoring.");
+                }
+              } catch (JSONException je) {
+                LOG.error("Unexpected JSON " + ja.getJSONObject(i).toString() + "Skipping. " + je.getMessage());
               }
             }
           }

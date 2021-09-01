@@ -54,13 +54,17 @@ public class OutlinkParseFilter implements HtmlParseFilter {
       String fromUrl = content.getUrl();
       Parse parse = parseResult.get(fromUrl);
       ParseData parseData = parse.getData();
+      String seedUrl = parseData.getContentMeta().get("collection.seed");
+      if (seedUrl == null) {
+        seedUrl = fromUrl;
+      }
       Outlink outlinks[] = parseData.getOutlinks();
       if (outlinks.length > 0) {
         List<Outlink> filteredOutlinks = new ArrayList<Outlink>();
         LOG.info("Checking " + outlinks.length + " outlinks for descendants");
         for (Outlink outlink : outlinks) {
           String toUrl = outlink.getToUrl();
-          if (validateDescendant(fromUrl, toUrl)) {
+          if (validateDescendant(seedUrl, toUrl)) {
             filteredOutlinks.add(outlink);
           }
         }
@@ -97,10 +101,12 @@ public class OutlinkParseFilter implements HtmlParseFilter {
     try {
       String fromDomain = URLUtil.getDomainName(fromUrl).toLowerCase();
       String toDomain = URLUtil.getDomainName(toUrl).toLowerCase();
+      String fromHost = URLUtil.getHost(fromUrl).toLowerCase();
+      String toHost = URLUtil.getHost(toUrl).toLowerCase();
       String fromPath = new URL(fromUrl).getPath().toLowerCase();
       String toPath = new URL(toUrl).getPath().toLowerCase();
-      String fromChk = fromDomain + fromPath;
-      String toChk = toDomain + toPath;
+      String fromChk = fromHost + fromPath;
+      String toChk = toHost + toPath;
 
       // Is the outlink not a descendant?
       if (toChk.indexOf(fromChk) != 0) {

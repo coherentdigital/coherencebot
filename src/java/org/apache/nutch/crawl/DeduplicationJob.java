@@ -275,7 +275,7 @@ public class DeduplicationJob extends NutchTool implements Tool {
 
     String group = "none";
     Path crawlDb = new Path(args[0]);
-    String compareOrder = "score,fetchTime,urlLength";
+    String compareOrder = "httpsOverHttp,score,fetchTime,urlLength";
 
     for (int i = 1; i < args.length; i++) {
       if (args[i].equals("-group")) 

@@ -46,7 +46,7 @@ import org.slf4j.LoggerFactory;
  * additional exclusion of not only the external outbound links, but also the
  * internal outbound links that are not descendants.
  *
- * A special case is made for tpoUrls to PDFs since these only need to be from
+ * A special case is made for toUrls to PDFs since these only need to be from
  * the same domain, not the same domain and descendant path.
  *
  * @since Jun 1, 2021
