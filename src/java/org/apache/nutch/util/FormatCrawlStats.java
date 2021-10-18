@@ -5,8 +5,8 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -36,7 +36,7 @@ public class FormatCrawlStats extends Configured implements Tool {
     // Note: Nutch reports fetch/unfetched counts by host, not by collection.
     // So we produce only one dashboard record for each host.
     List<JSONObject> collectionObjs = new ArrayList<JSONObject>();
-    try (Stream<String> stream = Files.lines(Path.of("seeds.txt"))) {
+    try (Stream<String> stream = Files.lines(FileSystems.getDefault().getPath(".", "seeds.txt"))) {
       // This turns each collection record in seeds.txt to a list of JSON objs.
       collectionObjs = stream
           .map(FormatCrawlStats::tsvToJson)
@@ -92,7 +92,7 @@ public class FormatCrawlStats extends Configured implements Tool {
 
     // Read in the fetched/unfetched counts by host and update hostMeta.
     List<JSONObject> hostCounts = new ArrayList<JSONObject>();
-    try (Stream<String> stream = Files.lines(Path.of("part-r-00000"))) {
+    try (Stream<String> stream = Files.lines(FileSystems.getDefault().getPath(".", "part-r-00000"))) {
       // This puts all the host counts for fetch/unfetched into a list of JSON objs.
       hostCounts = stream
           .map(FormatCrawlStats::ccToJson)
