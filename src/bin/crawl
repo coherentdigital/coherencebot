@@ -464,7 +464,7 @@ do
           mv analysis/crawlcomplete/part-r-* .
           cp test-url.txt seeds.txt
       fi
-      __bin_nutch formatcrawlstats -inputDirs "$CRAWL_PATH"/crawldb -mode host -outputDir ./analysis/crawlcomplete
+      __bin_nutch formatcrawlstats
       __bin_nutch updatestats -host search-poco-long-tail-xqt4mqebrae6r66tdzfg2ahc2a.us-east-2.es.amazonaws.com -index cbdashboard -input hosts.json
       rm part-r*
       rm seeds.txt
