@@ -140,7 +140,7 @@ public class StatsIndexer extends Configured implements Tool {
       close();
       LOG.info("Indexed {} records.", records_indexed);
     } catch (Exception e) {
-      LOG.error(e.getCause().getMessage());
+      LOG.error(e.toString());
     }
 
     LOG.info("StatsIndexer: done");
