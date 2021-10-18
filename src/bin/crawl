@@ -430,6 +430,8 @@ do
   if $ANALYZEFLAG; then
       echo "Extracting fetch statistics from $SEGMENT"
       __bin_nutch readseg -dump "$CRAWL_PATH"/segments/$SEGMENT ./analysis/readseg/fetch -nocontent -nogenerate -noparse -noparsedata -noparsetext -json
+
+      pushd ../local
       if [ $mode = "distributed" ]; then
           hadoop fs -get analysis/readseg/fetch/dump
           hadoop fs -rm analysis/readseg/fetch/dump
@@ -437,6 +439,7 @@ do
           mv analysis/readseg/fetch/dump dump
       fi
       __bin_nutch updatestats -host search-poco-long-tail-xqt4mqebrae6r66tdzfg2ahc2a.us-east-2.es.amazonaws.com -index cbdashboard -input dump
+      popd
 
       echo "Extracting crawlcomplete statistics from "$CRAWL_PATH"/crawldb"
       if [ $mode = "distributed" ]; then
@@ -451,6 +454,8 @@ do
          rm part-r*
       fi
       __bin_nutch crawlcomplete -inputDirs "$CRAWL_PATH"/crawldb -mode host -outputDir ./analysis/crawlcomplete
+
+      pushd ../local
       if [ $mode = "distributed" ]; then
           hadoop fs -get analysis/crawlcomplete/part-r*
           hadoop fs -rm analysis/crawlcomplete/part-r*
@@ -464,6 +469,7 @@ do
       rm part-r*
       rm seeds.txt
       rm hosts.json
+      popd
   fi
 done
 
