@@ -18,6 +18,7 @@ package org.apache.nutch.statswriter.elastic;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Iterator;
@@ -121,8 +122,8 @@ public class StatsIndexer extends Configured implements Tool {
               TimeValue.timeValueMillis(expBackoffMillis), expBackoffRetries))
           .build();
 
-      Path fileName = Path.of(input);
-      String jsonStr = Files.readString(fileName);
+      Path fileName = FileSystems.getDefault().getPath(".", input);
+      String jsonStr = new String(Files.readAllBytes(fileName));
       JSONArray ja = new JSONArray(jsonStr);
       if (ja.length() > 0) {
         for (int i = 0; i < ja.length(); i++) {
