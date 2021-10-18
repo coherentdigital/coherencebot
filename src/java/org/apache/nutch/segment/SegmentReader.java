@@ -224,6 +224,8 @@ public class SegmentReader extends Configured implements Tool {
         Writable value = val.get(); // unwrap
         if (value instanceof CrawlDatum) {
           dump.append(((CrawlDatum) value).toJsonString());
+          // Some records have multiple CrawDatum's; take the first.
+          break;
         }
       }
       dump.append("}");
