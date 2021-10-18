@@ -67,8 +67,7 @@ public class ThumbnailParseFilter implements HtmlParseFilter {
   private String awsAccessKeyId;
   private String awsSecretAccessKey;
   private String thumbApiKey;
-  private static final String[] supportedMimeTypes = { "application/pdf",
-      "text/html" };
+  private static final String[] supportedMimeTypes = { "application/pdf" };
   private AmazonS3 s3 = null;
 
   public ParseResult filter(Content content, ParseResult parseResult,

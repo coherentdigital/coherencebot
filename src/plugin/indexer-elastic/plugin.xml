@@ -48,6 +48,7 @@
     <library name="jopt-simple-5.0.2.jar"/>
     <library name="lang-mustache-client-7.11.1.jar"/>
     <library name="log4j-api-2.11.1.jar"/>
+    <library name="log4j-core-2.11.1.jar"/>
     <library name="lucene-analyzers-common-8.7.0.jar"/>
     <library name="lucene-backward-codecs-8.7.0.jar"/>
     <library name="lucene-core-8.7.0.jar"/>

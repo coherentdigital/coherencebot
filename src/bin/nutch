@@ -92,6 +92,7 @@ if [ $# = 0 ]; then
   echo "  domainstats       calculate domain statistics from crawldb"
   echo "  protocolstats     calculate protocol status code stats from crawldb"
   echo "  crawlcomplete     calculate crawl completion stats from crawldb"
+  echo "  formatcrawlstats  Prepare a dashboard update file for the crawl completion stats"
   echo "  webgraph          generate a web graph from existing segments"
   echo "  linkrank          run a link analysis program on the generated web graph"
   echo "  scoreupdater      updates the crawldb with linkrank scores"
@@ -105,6 +106,7 @@ if [ $# = 0 ]; then
   echo "  readhostdb        read / dump host db"
   echo "  sitemap           perform Sitemap processing"
   echo "  showproperties    print Nutch/Hadoop configuration properties to stdout"
+  echo "  updatestats       update statistics dashboard after readseg produces a dump; requires -json on readseg"
   echo " or"
   echo "  CLASSNAME         run the class named CLASSNAME"
   echo "Most commands print help when invoked w/o parameters."
@@ -164,6 +166,10 @@ IFS=
 # add libs to CLASSPATH
 if $local; then
   for f in "$NUTCH_HOME"/lib/*.jar; do
+   CLASSPATH="${CLASSPATH}:$f";
+  done
+  # For stats indexer
+  for f in "$NUTCH_HOME"/plugins/indexer-elastic/*.jar; do
    CLASSPATH="${CLASSPATH}:$f";
   done
   # local runtime
@@ -317,6 +323,10 @@ elif [ "$COMMAND" = "sitemap" ] ; then
   CLASS=org.apache.nutch.util.SitemapProcessor
 elif [ "$COMMAND" = "showproperties" ] ; then
   CLASS=org.apache.nutch.tools.ShowProperties
+elif [ "$COMMAND" = "updatestats" ] ; then
+  CLASS=org.apache.nutch.statswriter.elastic.StatsIndexer
+elif [ "$COMMAND" = "formatcrawlstats" ] ; then
+  CLASS=org.apache.nutch.util.FormatCrawlStats
 else
   CLASS=$COMMAND
 fi

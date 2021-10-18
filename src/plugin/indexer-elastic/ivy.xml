@@ -42,6 +42,7 @@
       <exclude org="commons-logging" name="commons-logging" />
       <exclude org="com.tdunning" name="t-digest" />
     </dependency>
+    <dependency org="org.apache.logging.log4j" name="log4j-core" rev="2.11.1"/>
   </dependencies>
   
 </ivy-module>

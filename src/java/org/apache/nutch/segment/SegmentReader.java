@@ -25,6 +25,8 @@ import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.Writer;
 import java.lang.invoke.MethodHandles;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
@@ -87,6 +89,7 @@ public class SegmentReader extends Configured implements Tool {
   private boolean pd = true;
   private boolean pt = true;
   private boolean recodeContent = false;
+  private boolean json = false;
 
   public static class InputCompatMapper extends
       Mapper<WritableComparable<?>, Writable, Text, NutchWritable> {
@@ -192,6 +195,42 @@ public class SegmentReader extends Configured implements Tool {
     }
   }
 
+  public static class InputJsonReducer extends
+    Reducer<Text, NutchWritable, Text, Text> {
+
+    @Override
+    public void reduce(Text key, Iterable<NutchWritable> values,
+        Context context) throws IOException, InterruptedException {
+      StringBuffer dump = new StringBuffer();
+
+      dump.append("{\"url\":\"" + key.toString() + "\", ");
+      dump.append("\"type\":\"url\", ");
+      try {
+        URI uri = new URI(key.toString());
+        String host = uri.getHost();
+        dump.append("\"host\":\"" + host + "\", ");
+      } catch (URISyntaxException e) {
+        LOG.error("Unable to create URI for URL {}", key.toString());
+      }
+      String region = System.getenv("AWS_DEFAULT_REGION");
+      if (region == null) {
+        region = "us-east-2";
+      }
+      dump.append("\"region\":\"" + region + "\", ");
+      String jobName = context.getJobName();
+      String segment = jobName.substring(jobName.lastIndexOf('/') + 1);
+      dump.append("\"segment\":\"" + segment + "\", ");
+      for (NutchWritable val : values) {
+        Writable value = val.get(); // unwrap
+        if (value instanceof CrawlDatum) {
+          dump.append(((CrawlDatum) value).toJsonString());
+        }
+      }
+      dump.append("}");
+      context.write(key, new Text(dump.toString()));
+    }
+  }
+
   public void dump(Path segment, Path output) throws IOException,
       InterruptedException, ClassNotFoundException {
 
@@ -219,7 +258,11 @@ public class SegmentReader extends Configured implements Tool {
 
     job.setInputFormatClass(SequenceFileInputFormat.class);
     job.setMapperClass(InputCompatMapper.class);
-    job.setReducerClass(InputCompatReducer.class);
+    if (json) {
+      job.setReducerClass(InputJsonReducer.class);
+    } else {
+      job.setReducerClass(InputCompatReducer.class);
+    }
     job.setJarByClass(SegmentReader.class);
 
     Path tempDir = new Path(conf.get("hadoop.tmp.dir", "/tmp") + "/segread-"
@@ -262,11 +305,19 @@ public class SegmentReader extends Configured implements Tool {
           new BufferedWriter(new OutputStreamWriter(outFs.create(dumpFile),
               StandardCharsets.UTF_8)))) {
 
+        if (json) {
+          writer.println("[");
+        }
         for (int i = 0; i < files.length; i++) {
           Path partFile = files[i];
           try {
-            currentRecordNumber = append(fs, conf, partFile, writer,
+            if (json) {
+              currentRecordNumber = appendJSON(fs, conf, partFile, writer,
                 currentRecordNumber);
+            } else {
+              currentRecordNumber = append(fs, conf, partFile, writer,
+                  currentRecordNumber);
+            }
           } catch (IOException exception) {
             if (LOG.isWarnEnabled()) {
               LOG.warn("Couldn't copy the content of " + partFile.toString()
@@ -274,6 +325,9 @@ public class SegmentReader extends Configured implements Tool {
               LOG.warn(exception.getMessage());
             }
           }
+        }
+        if (json) {
+          writer.println("]");
         }
       }
     }
@@ -292,6 +346,24 @@ public class SegmentReader extends Configured implements Tool {
           line = "Recno:: " + currentRecordNumber++;
         }
         writer.println(line);
+        line = reader.readLine();
+      }
+      return currentRecordNumber;
+    }
+  }
+
+  /** Appends two JSON files and updates the Recno counter */
+  private int appendJSON(FileSystem fs, Configuration conf, Path src,
+      PrintWriter writer, int currentRecordNumber) throws IOException {
+    try (BufferedReader reader = new BufferedReader(
+        new InputStreamReader(fs.open(src), StandardCharsets.UTF_8))) {
+      String line = reader.readLine();
+      while (line != null) {
+        if (currentRecordNumber > 0) {
+          writer.println(", ");
+        }
+        writer.print(line);
+        currentRecordNumber++;
         line = reader.readLine();
       }
       return currentRecordNumber;
@@ -644,6 +716,9 @@ public class SegmentReader extends Configured implements Tool {
       } else if (args[i].equals("-recode")) {
         recodeContent = true;
         args[i] = null;
+      } else if (args[i].equals("-json")) {
+        json = true;
+        args[i] = null;
       }
     }
 
@@ -723,6 +798,7 @@ public class SegmentReader extends Configured implements Tool {
     System.err.println("\t-noparse\tignore crawl_parse directory");
     System.err.println("\t-noparsedata\tignore parse_data directory");
     System.err.println("\t-noparsetext\tignore parse_text directory");
+    System.err.println("\t-json\t\toutput JSON format dump");
     System.err.println("\t-recode \ttry to recode HTML content from the page's\n"
         + "\t        \toriginal charset to UTF-8\n");
     System.err.println();

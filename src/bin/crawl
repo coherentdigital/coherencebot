@@ -36,6 +36,7 @@
 #                                         specified second is used by default. [default: -1]
 #   -s <seed_dir>                         Path to seeds file(s)
 #   -f|--feed                             Injects new seed URLs from an API every iteration"
+#   -a|--analyze                          Run URL analysis on each segment and index to a dashboard index
 #   -sm <sitemap_dir>                     Path to sitemap URL file(s)
 #
 #   --hostdbupdate                        Boolean indicator if we call hostdbupdate or not
@@ -96,6 +97,7 @@ function __print_usage {
   echo -e "  \t\t\t\t\tspecified second is used by default. [default: -1]"
   echo -e "  -s <seed_dir>\t\t\t\tPath to seeds file(s)"
   echo -e "  -f|--feed\t\t\t\tInjects new seed URLs from an API every iteration"
+  echo -e "  -a|--analyze\t\t\t\tRun URL analysis on each segment and index to a dashboard index"
   echo -e "  -sm <sitemap_dir>\t\t\tPath to sitemap URL file(s)"
   echo -e "  --hostdbupdate\t\t\tBoolean flag showing if we either update or not update hostdb for each round"
   echo -e "  --hostdbgenerate\t\t\tBoolean flag showing if we use hostdb in generate or not"
@@ -117,6 +119,7 @@ function __print_usage {
 }
 
 # default values
+ANALYZEFLAG=false
 INDEXFLAG=false
 HOSTDBUPDATE=false
 HOSTDBGENERATE=false
@@ -135,6 +138,10 @@ DEDUP_GROUP=none
 while [[ $# > 0 ]]
 do
     case $1 in
+        -a|--analyze)
+            ANALYZEFLAG=true
+            shift
+            ;;
         -i|--index)
             INDEXFLAG=true
             shift
@@ -420,6 +427,44 @@ do
       echo "Skipping indexing ..."
   fi
 
+  if $ANALYZEFLAG; then
+      echo "Extracting fetch statistics from $SEGMENT"
+      __bin_nutch readseg -dump "$CRAWL_PATH"/segments/$SEGMENT ./analysis/readseg/fetch -nocontent -nogenerate -noparse -noparsedata -noparsetext -json
+      if [ $mode = "distributed" ]; then
+          hadoop fs -get analysis/readseg/fetch/dump
+          hadoop fs -rm analysis/readseg/fetch/dump
+      else
+          mv analysis/readseg/fetch/dump dump
+      fi
+      __bin_nutch updatestats -host search-poco-long-tail-xqt4mqebrae6r66tdzfg2ahc2a.us-east-2.es.amazonaws.com -index cbdashboard -input dump
+
+      echo "Extracting crawlcomplete statistics from "$CRAWL_PATH"/crawldb"
+      if [ $mode = "distributed" ]; then
+          hadoop fs -rm analysis/crawlcomplete/part-r*
+          hadoop fs -rm analysis/crawlcomplete
+      else
+          if test -d "analysis/crawlcomplete"; then
+              rm -rf analysis/crawlcomplete
+          fi
+      fi
+      if test -f "part-r-00000"; then
+         rm part-r*
+      fi
+      __bin_nutch crawlcomplete -inputDirs "$CRAWL_PATH"/crawldb -mode host -outputDir ./analysis/crawlcomplete
+      if [ $mode = "distributed" ]; then
+          hadoop fs -get analysis/crawlcomplete/part-r*
+          hadoop fs -rm analysis/crawlcomplete/part-r*
+          aws s3 cp --recursive --exclude "*" --include "seed*.txt" "$CRAWL_PATH" . && mv seed*.txt seeds.txt
+      else
+          mv analysis/crawlcomplete/part-r-* .
+          cp test-url.txt seeds.txt
+      fi
+      __bin_nutch formatcrawlstats -inputDirs "$CRAWL_PATH"/crawldb -mode host -outputDir ./analysis/crawlcomplete
+      __bin_nutch updatestats -host search-poco-long-tail-xqt4mqebrae6r66tdzfg2ahc2a.us-east-2.es.amazonaws.com -index cbdashboard -input hosts.json
+      rm part-r*
+      rm seeds.txt
+      rm hosts.json
+  fi
 done
 
 #######################################################

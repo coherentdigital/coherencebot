@@ -504,6 +504,67 @@ public class CrawlDatum implements WritableComparable<CrawlDatum>, Cloneable {
     return buf.toString();
   }
 
+  /**
+   * Write a JSON-ish version of the crawl datum.
+   *
+   * Does not supply an {} object wrapper, since we may want this to be
+   * inside a larger object.
+   *
+   * @return JSON-ish string
+   */
+  public String toJsonString() {
+    StringBuilder buf = new StringBuilder();
+    //Status
+    buf.append("\"status\":" + getStatus() + ", ");
+    // Status name
+    buf.append("\"status_name\":\"" + getStatusName(getStatus()) + "\", ");
+    // Fetch time
+    buf.append("\"fetch_time\":\"" + new Date(getFetchTime()) + "\", ");
+    // Modified time
+    buf.append("\"modified_time\":\"" + new Date(getModifiedTime()) + "\", ");
+    // Retries
+    buf.append("\"retries\":" + getRetriesSinceFetch() + ", ");
+    // Retry Interval
+    buf.append("\"retry_interval\":" + getFetchInterval() + ", ");
+    // Score
+    buf.append("\"score\":" + getScore());
+    // metadata
+    if (metaData != null) {
+      for (Entry<Writable, Writable> e : metaData.entrySet()) {
+        buf.append(", ");
+        // Do some cleanup of the names in the metadata package _pst_ => pst
+        String key = e.getKey().toString().toLowerCase();
+        if (key.indexOf('_') == 0) {
+          key = key.replace("_", "");
+        }
+        key = key.replace(".", "_");
+        key = key.replace("-", "_");
+        buf.append("\"" + key + "\":");
+        String value = e.getValue().toString();
+        if ("pst".equals(key) && value.indexOf(",") > 0) {
+          // pst looks like "_pst_":"success(1), lastModified=1634050282000"
+          // Break on the 1st comma and make two fields
+          String values[] = value.split(",", 2);
+          buf.append("\"");
+          buf.append(values[0].trim());
+          buf.append("\", \"pst_message\":\"");
+          buf.append(values[1].trim());
+          buf.append("\"");
+        } else {
+          boolean isNumeric = value.chars().allMatch(Character::isDigit);
+          if (!isNumeric) {
+            buf.append("\"");
+          }
+          buf.append(e.getValue());
+          if (!isNumeric) {
+            buf.append("\"");
+          }
+        }
+      }
+    }
+    return buf.toString();
+  }
+
   private boolean metadataEquals(org.apache.hadoop.io.MapWritable otherMetaData) {
     if (metaData == null || metaData.size() == 0) {
       return otherMetaData == null || otherMetaData.size() == 0;
