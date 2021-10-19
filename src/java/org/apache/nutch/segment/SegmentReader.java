@@ -29,6 +29,8 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -204,13 +206,25 @@ public class SegmentReader extends Configured implements Tool {
       StringBuffer dump = new StringBuffer();
 
       dump.append("{\"url\":\"" + key.toString() + "\", ");
+
       dump.append("\"type\":\"url\", ");
       try {
         URI uri = new URI(key.toString());
         String host = uri.getHost();
         dump.append("\"host\":\"" + host + "\", ");
+
+        // Elastic IDs are limited to 512 chars, so see need to
+        // hash the URL to use it as a record id.  We prefix host to
+        // Reduce collisions to a given host.
+        MessageDigest md = MessageDigest.getInstance("SHA-256");
+        byte urlBytes[] = key.toString().getBytes();
+        byte[] thedigest = md.digest(urlBytes);
+        String id = host + '-' + thedigest.toString();
+        dump.append("\"id\":\"" + id + "\", ");
       } catch (URISyntaxException e) {
         LOG.error("Unable to create URI for URL {}", key.toString());
+      } catch (NoSuchAlgorithmException nsae) {
+        LOG.error(nsae.toString());
       }
       String region = System.getenv("AWS_DEFAULT_REGION");
       if (region == null) {

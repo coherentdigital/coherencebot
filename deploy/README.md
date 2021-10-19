@@ -41,5 +41,5 @@ This will use the above bootstrap.sh script to download coherencebot.tar.gz, exp
   cp conf/nutch-site-$COHERENCEBOT_REGION.xml conf/nutch-site.xml
   ant clean runtime
   cd runtime/deploy
-  nohup ./bin/crawl --index --num-fetchers 2 s3://coherencebot/crawl -1 >> /var/log/coherencebot/coherencebot.log &
+  nohup ./bin/crawl --index --analyze --num-fetchers 2 s3://coherencebot/crawl -1 >> /var/log/coherencebot/coherencebot.log &
 ```
