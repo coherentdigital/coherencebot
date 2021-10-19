@@ -1,0 +1,84 @@
+#!/bin/bash
+#
+
+function __print_usage {
+  echo "Usage: ./bin/dashboard <crawl_dir>"
+  echo -e "Start this script from the runtime/deploy directory."
+  echo -e ""
+  exit 1
+}
+
+if [[ $# != 1 ]]; then
+  __print_usage
+fi
+
+CRAWL_PATH="$1"
+
+function __bin_nutch {
+    # run ./bin/nutch, exit if exit value indicates error
+
+    echo "./bin/nutch $@" ;# echo command and arguments
+    "./bin/nutch" "$@"
+
+    RETCODE=$?
+    if [ $RETCODE -ne 0 ]
+    then
+        echo "Error running:"
+        echo "  ./bin/nutch $@"
+        echo "Failed with exit value $RETCODE."
+        exit $RETCODE
+    fi
+}
+
+# Get a copy of the seeds used on this bot; this metadata becomes part of the 'host' records saved to the dashboard.
+pushd ../local
+aws s3 cp --recursive --exclude "*" --include "seed*.txt" "$CRAWL_PATH" . && mv seed*.txt seeds.txt
+popd
+
+# Get a count of FETCHED and UNFECTCHED URLs for each host.
+# This is output to ./analysis/crawlcomplete/part-r-00000 on the hdfs - which cannot exist when the map/reduce task runs.
+echo "Extracting crawlcomplete statistics from "$CRAWL_PATH"/crawldb"
+hadoop fs -rm analysis/crawlcomplete/part-r*
+hadoop fs -rmdir analysis/crawlcomplete
+__bin_nutch crawlcomplete -inputDirs "$CRAWL_PATH"/crawldb -mode host -outputDir ./analysis/crawlcomplete
+
+# Format the crawlcomplete stats and the seeds.txt as JSON.  Output is to hosts.json
+pushd ../local
+# Get a copy of the crawlcomplete stats from the HDFS to local storage.
+hadoop fs -get analysis/crawlcomplete/part-r*
+hadoop fs -rm analysis/crawlcomplete/part-r*
+hadoop fs -rmdir analysis/crawlcomplete
+__bin_nutch formatcrawlstats
+# Write the host records to elastic.
+__bin_nutch updatestats -host search-poco-long-tail-xqt4mqebrae6r66tdzfg2ahc2a.us-east-2.es.amazonaws.com -index cbdashboard -input hosts.json
+rm part-r*
+rm seeds.txt
+rm hosts.json
+popd
+
+# loop through each existing segment and index its fetch stats to the dashboard
+for SEGMENT in `hadoop fs -ls "$CRAWL_PATH"/segments/ | grep segments | sed -e "s/\//\\n/g" | egrep 20[0-9]+ | sort -n`
+do
+  if [ -e ".STOP" ]; then
+    echo "STOP file found - escaping loop"
+    break
+  fi
+
+  echo "Operating on segment : $SEGMENT"
+
+  echo "Extracting fetch statistics from $SEGMENT"
+  # Produce ./analysis/readseg/fetch/dump -- a text file of the fetch stats for all URLs in this segment.
+  __bin_nutch readseg -dump "$CRAWL_PATH"/segments/$SEGMENT ./analysis/readseg/fetch -nocontent -nogenerate -noparse -noparsedata -noparsetext -json
+
+  # Index this fetch dump.  Does not use hadoop; this runs off local classes on the master node.
+  pushd ../local
+  rm dump
+  hadoop fs -get analysis/readseg/fetch/dump
+  hadoop fs -rm analysis/readseg/fetch/dump
+  hadoop fs -rmdir analysis/readseg/fetch
+  hadoop fs -rmdir analysis/readseg
+  __bin_nutch updatestats -host search-poco-long-tail-xqt4mqebrae6r66tdzfg2ahc2a.us-east-2.es.amazonaws.com -index cbdashboard -input dump
+  popd
+done
+
+exit 0
