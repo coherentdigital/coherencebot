@@ -428,6 +428,14 @@ do
   fi
 
   if $ANALYZEFLAG; then
+      if [ -z ${ES_USERNAME+x} ];
+        then echo "Please set ES_USERNAME to the elasticsearch username for the cbdashboard index.";
+        exit(1)
+      fi
+      if [ -z ${ES_PASSWORD+x} ];
+        then echo "Please set ES_PASSWORD to the elasticsearch password for the cbdashboard index.";
+        exit(1)
+      fi
       echo "Extracting fetch statistics from $SEGMENT"
       __bin_nutch readseg -dump "$CRAWL_PATH"/segments/$SEGMENT ./analysis/readseg/fetch -nocontent -nogenerate -noparse -noparsedata -noparsetext -json
 
@@ -440,7 +448,7 @@ do
       else
           mv analysis/readseg/fetch/dump dump
       fi
-      ./bin/nutch updatestats -host search-poco-long-tail-xqt4mqebrae6r66tdzfg2ahc2a.us-east-2.es.amazonaws.com -index cbdashboard -input dump
+      ./bin/nutch updatestats -host search-cbdashboard-pqwg4w7np43yp3n5x24bdfjv2e.us-east-2.es.amazonaws.com -username $ES_USERNAME -password $ES_PASSWORD -index cbdashboard -input dump
       popd
 
       echo "Extracting crawlcomplete statistics from "$CRAWL_PATH"/crawldb"
@@ -468,7 +476,7 @@ do
           cp test-url.txt seeds.txt
       fi
       ./bin/nutch formatcrawlstats
-      ./bin/nutch updatestats -host search-poco-long-tail-xqt4mqebrae6r66tdzfg2ahc2a.us-east-2.es.amazonaws.com -index cbdashboard -input hosts.json
+      ./bin/nutch updatestats -host search-cbdashboard-pqwg4w7np43yp3n5x24bdfjv2e.us-east-2.es.amazonaws.com -username $ES_USERNAME -password $ES_PASSWORD -index cbdashboard -input hosts.json
       rm part-r*
       rm seeds.txt
       rm hosts.json

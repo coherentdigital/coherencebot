@@ -18,9 +18,11 @@ package org.apache.nutch.statswriter.elastic;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import javax.net.ssl.SSLContext;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.NoSuchAlgorithmException;
 import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 
@@ -304,15 +306,21 @@ public class StatsIndexer extends Configured implements Tool {
 
     if (host != null && port > 1) {
       HttpHost[] hostsList = new HttpHost[1];
-      hostsList[0] = new HttpHost(host, port);
+      HttpHost esHost = new HttpHost(host, 443, "https");
+      hostsList[0] = esHost;
       RestClientBuilder restClientBuilder = RestClient.builder(hostsList);
       if (auth) {
         restClientBuilder
             .setHttpClientConfigCallback(new HttpClientConfigCallback() {
               @Override
               public HttpAsyncClientBuilder customizeHttpClient(
-                  HttpAsyncClientBuilder arg0) {
-                return arg0.setDefaultCredentialsProvider(credentialsProvider);
+                  HttpAsyncClientBuilder httpClientBuilder) {
+                try {
+                  httpClientBuilder.setSSLContext(SSLContext.getDefault());
+                } catch (NoSuchAlgorithmException e) {
+                  LOG.error(e.toString());
+                }
+                return httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider);
               }
             });
       }

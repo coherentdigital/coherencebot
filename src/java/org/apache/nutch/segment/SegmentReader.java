@@ -226,9 +226,9 @@ public class SegmentReader extends Configured implements Tool {
       } catch (NoSuchAlgorithmException nsae) {
         LOG.error(nsae.toString());
       }
-      String region = System.getenv("AWS_DEFAULT_REGION");
+      String region = System.getenv("COHERENCEBOT_REGION");
       if (region == null) {
-        region = "us-east-2";
+        region = "local";
       }
       dump.append("\"region\":\"" + region + "\", ");
       String jobName = context.getJobName();

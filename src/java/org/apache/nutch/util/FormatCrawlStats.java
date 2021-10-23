@@ -35,6 +35,9 @@ public class FormatCrawlStats extends Configured implements Tool {
     // Convert it to JSON in preparation for it being a host record.
     // Note: Nutch reports fetch/unfetched counts by host, not by collection.
     // So we produce only one dashboard record for each host.
+    JSONArray unknown = new JSONArray();
+    unknown.put("unknown");
+
     List<JSONObject> collectionObjs = new ArrayList<JSONObject>();
     try (Stream<String> stream = Files.lines(FileSystems.getDefault().getPath(".", "seeds.txt"))) {
       // This turns each collection record in seeds.txt to a list of JSON objs.
@@ -108,17 +111,23 @@ public class FormatCrawlStats extends Configured implements Tool {
             hostMeta = new JSONObject();
             hostMeta.put("host", host);
             hostMeta.put("id", host);
-            hostMeta.put("collection_ids", "unknown");
-            hostMeta.put("collection_titles", "unknown");
-            hostMeta.put("collection_seeds", "unknown");
+            hostMeta.put("collection_ids", unknown);
+            hostMeta.put("collection_titles", unknown);
+            hostMeta.put("collection_seeds", unknown);
             hostMeta.put("org_slug", "unknown");
             hostMeta.put("type", "host");
           }
           if (cc.has("unfetched")) {
             hostMeta.put("unfetched", cc.get("unfetched"));
+          } else if (!hostMeta.has("unfetched")) {
+            // Default unfetched to 0
+            hostMeta.put("unfetched", 0);
           }
           if (cc.has("fetched")) {
             hostMeta.put("fetched", cc.get("fetched"));
+          } else if (!hostMeta.has("fetched")) {
+            // Default fetched to 0
+            hostMeta.put("fetched", 0);
           }
           hostsMeta.put(host, hostMeta);
         } else {
@@ -171,6 +180,11 @@ public class FormatCrawlStats extends Configured implements Tool {
           jo.put("collection_seeds", new JSONArray("[\"" + columns[3].split("=")[1] + "\"]"));
           jo.put("org_slug", columns[4].split("=")[1]);
           jo.put("type", "host");
+          String region = System.getenv("COHERENCEBOT_REGION");
+          if (region == null) {
+            region = "local";
+          }
+          jo.put("region", region);
           return jo;
         } catch (JSONException je) {
           LOG.error(je.toString());
