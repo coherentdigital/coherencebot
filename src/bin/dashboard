@@ -50,7 +50,7 @@ hadoop fs -rm analysis/crawlcomplete/part-r*
 hadoop fs -rmdir analysis/crawlcomplete
 __bin_nutch formatcrawlstats
 # Write the host records to elastic.
-__bin_nutch updatestats -host search-poco-long-tail-xqt4mqebrae6r66tdzfg2ahc2a.us-east-2.es.amazonaws.com -index cbdashboard -input hosts.json
+__bin_nutch updatestats -host search-cbdashboard-pqwg4w7np43yp3n5x24bdfjv2e.us-east-2.es.amazonaws.com -username $ES_USERNAME -password $ES_PASSWORD -index cbdashboard -input hosts.json
 rm part-r*
 rm seeds.txt
 rm hosts.json
@@ -77,7 +77,7 @@ do
   hadoop fs -rm analysis/readseg/fetch/dump
   hadoop fs -rmdir analysis/readseg/fetch
   hadoop fs -rmdir analysis/readseg
-  __bin_nutch updatestats -host search-poco-long-tail-xqt4mqebrae6r66tdzfg2ahc2a.us-east-2.es.amazonaws.com -index cbdashboard -input dump
+  __bin_nutch updatestats -host search-cbdashboard-pqwg4w7np43yp3n5x24bdfjv2e.us-east-2.es.amazonaws.com -username $ES_USERNAME -password $ES_PASSWORD -index cbdashboard -input dump
   popd
 done
 

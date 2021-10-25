@@ -1,0 +1,80 @@
+#!/bin/bash
+#
+
+function __print_usage {
+  echo "Usage: ./bin/anchors <crawl_dir>"
+  echo -e "Start this script from the runtime/deploy directory."
+  echo -e ""
+  exit 1
+}
+
+if [[ $# != 1 ]]; then
+  __print_usage
+fi
+
+CRAWL_PATH="$1"
+
+function __bin_nutch {
+    # run ./bin/nutch, exit if exit value indicates error
+
+    echo "./bin/nutch $@" ;# echo command and arguments
+    "./bin/nutch" "$@"
+
+    RETCODE=$?
+    if [ $RETCODE -ne 0 ]
+    then
+        echo "Error running:"
+        echo "  ./bin/nutch $@"
+        echo "Failed with exit value $RETCODE."
+        exit $RETCODE
+    fi
+}
+
+# determines whether mode based on presence of job file
+mode=local
+if [ -f "${bin}"/../*nutch*.job ]; then
+  mode=distributed
+fi
+
+if [ $mode = "local" ]; then
+  SEGMENTS=`ls "$CRAWL_PATH"/segments/ | sort -n`
+else
+  SEGMENTS=`hadoop fs -ls "$CRAWL_PATH"/segments/ | grep segments | sed -e "s/\//\\n/g" | egrep 20[0-9]+ | sort -n`
+fi
+
+
+# loop through each existing segment and extract its anchor info
+for SEGMENT in $SEGMENTS
+do
+  if [ -e ".STOP" ]; then
+    echo "STOP file found - escaping loop"
+    break
+  fi
+
+  echo "Operating on segment : $SEGMENT"
+
+  echo "Extracting anchor statistics from $SEGMENT"
+  # Produce ./analysis/readseg/fetch/dump -- a text file of the fetch stats for all URLs in this segment.
+  __bin_nutch readseg -dump "$CRAWL_PATH"/segments/$SEGMENT ./analysis/readseg/parsedata -nocontent -nogenerate -nofetch -noparse -noparsetext -recore
+
+  # Index this fetch dump.  Does not use hadoop; this runs off local classes on the master node.
+  pushd ../local
+  rm dump
+  if [[ "$mode" = "local" ]]; then
+    mv analysis/readseg/parsedata/dump .
+    rm -rf analysis/
+  else
+    hadoop fs -get analysis/readseg/parsedata/dump
+    hadoop fs -rm analysis/readseg/parsedata/dump
+    hadoop fs -rmdir analysis/readseg/parsedata
+    hadoop fs -rmdir analysis/readseg
+  fi
+  egrep "anchor: .+" dump | sort | uniq >> anchors.txt
+  rm dump
+  popd
+done
+pushd ../local
+sort anchors.txt | uniq > anchors
+popd
+
+exit 0
