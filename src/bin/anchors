@@ -32,7 +32,7 @@ function __bin_nutch {
 
 # determines whether mode based on presence of job file
 mode=local
-if [ -f "${bin}"/../*nutch*.job ]; then
+if [ -f ./*nutch*.job ]; then
   mode=distributed
 fi
 
