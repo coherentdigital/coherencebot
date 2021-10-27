@@ -430,11 +430,11 @@ do
   if $ANALYZEFLAG; then
       if [ -z ${ES_USERNAME+x} ];
         then echo "Please set ES_USERNAME to the elasticsearch username for the cbdashboard index.";
-        exit(1)
+        exit 1
       fi
       if [ -z ${ES_PASSWORD+x} ];
         then echo "Please set ES_PASSWORD to the elasticsearch password for the cbdashboard index.";
-        exit(1)
+        exit 1
       fi
       echo "Extracting fetch statistics from $SEGMENT"
       __bin_nutch readseg -dump "$CRAWL_PATH"/segments/$SEGMENT ./analysis/readseg/fetch -nocontent -nogenerate -noparse -noparsedata -noparsetext -json

@@ -264,6 +264,7 @@
       <packageset dir="${plugins.dir}/urlfilter-domaindenylist/src/java"/>
       <packageset dir="${plugins.dir}/urlfilter-fast/src/java"/>
       <packageset dir="${plugins.dir}/urlfilter-ignoreexempt/src/java"/>
+      <packageset dir="${plugins.dir}/urlfilter-path/src/java"/>
       <packageset dir="${plugins.dir}/urlfilter-prefix/src/java"/>
       <packageset dir="${plugins.dir}/urlfilter-regex/src/java"/>
       <packageset dir="${plugins.dir}/urlfilter-suffix/src/java"/>
@@ -807,6 +808,7 @@
       <packageset dir="${plugins.dir}/urlfilter-domaindenylist/src/java"/>
       <packageset dir="${plugins.dir}/urlfilter-fast/src/java"/>
       <packageset dir="${plugins.dir}/urlfilter-ignoreexempt/src/java"/>
+      <packageset dir="${plugins.dir}/urlfilter-path/src/java"/>
       <packageset dir="${plugins.dir}/urlfilter-prefix/src/java"/>
       <packageset dir="${plugins.dir}/urlfilter-regex/src/java"/>
       <packageset dir="${plugins.dir}/urlfilter-suffix/src/java"/>
@@ -1338,6 +1340,8 @@
         <source path="${plugins.dir}/urlfilter-fast/src/java/"/>
         <source path="${plugins.dir}/urlfilter-fast/src/test/"/>
         <source path="${plugins.dir}/urlfilter-ignoreexempt/src/java/" />
+        <source path="${plugins.dir}/urlfilter-path/src/java/" />
+        <source path="${plugins.dir}/urlfilter-path/src/test/" />
         <source path="${plugins.dir}/urlfilter-prefix/src/java/" />
         <source path="${plugins.dir}/urlfilter-prefix/src/test/" />
         <source path="${plugins.dir}/urlfilter-regex/src/java/" />

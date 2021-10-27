@@ -206,6 +206,7 @@
 
     <junit printsummary="yes" haltonfailure="no" fork="yes"
       errorProperty="tests.failed" failureProperty="tests.failed">
+      <!-- jvmarg value="-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=localhost:37649"/ -->
       <sysproperty key="test.data" value="${build.test}/data"/>
       <sysproperty key="test.input" value="${root}/data"/>
       <sysproperty key="javax.xml.parsers.DocumentBuilderFactory" value="com.sun.org.apache.xerces.internal.jaxp.DocumentBuilderFactoryImpl"/> 

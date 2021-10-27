@@ -689,6 +689,7 @@
 
   If false, no descendant link check is made.
   See org.apache.nutch.crawl.LinkDB and org.apache.nutch.fetcher.FetcherThread
+  This feature requires including parsefilter-outlinks in the plugins list.
   </description>
 </property>
 
@@ -699,6 +700,15 @@
   will be ignored. This is an effective way to limit the crawl to include
   only initially injected hosts or domains, without creating complex URLFilters.
   See 'db.ignore.external.links.mode'.
+  </description>
+</property>
+
+<property>
+  <name>db.approve.anchors</name>
+  <value>false</value>
+  <description>If true, outlink anchor texts are checked to ensure they
+    don't match any exclusion values found in
+    This feature requires including parsefilter-outlinks in the plugins list.
   </description>
 </property>
 
@@ -1854,6 +1864,20 @@ CAUTION: Set the parser.timeout to -1 or a bigger value than 30, when using this
   <value>fast-urlfilter.txt</value>
   <description>Name of file on CLASSPATH containing regular expressions
   used by urlfilter-fast (FastURLFilter) plugin.</description>
+</property>
+
+<property>
+  <name>urlfilter.anchor.file</name>
+  <value>anchor-urlfilter.txt</value>
+  <description>Name of file on CLASSPATH containing anchor text match strings
+  used by OutlinkParseFilter plugin.  Requires db.approve.anchors = true</description>
+</property>
+
+<property>
+  <name>urlfilter.path.file</name>
+  <value>path-urlfilter.txt</value>
+  <description>Name of file on CLASSPATH containing url paths
+  used by urlfilter-path (PrefixURLFilter) plugin.</description>
 </property>
 
 <property>

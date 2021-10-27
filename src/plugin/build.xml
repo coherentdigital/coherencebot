@@ -101,6 +101,7 @@
     <ant dir="urlfilter-domain" target="deploy" />
     <ant dir="urlfilter-domaindenylist" target="deploy" />
     <ant dir="urlfilter-fast" target="deploy"/>
+    <ant dir="urlfilter-path" target="deploy"/>
     <ant dir="urlfilter-prefix" target="deploy"/>
     <ant dir="urlfilter-regex" target="deploy"/>
     <ant dir="urlfilter-suffix" target="deploy"/>
@@ -166,6 +167,7 @@
      <ant dir="urlfilter-domaindenylist" target="test"/>
      <ant dir="urlfilter-fast" target="test"/>
      <!--ant dir="urlfilter-ignoreexempt" target="test"/-->
+     <ant dir="urlfilter-path" target="test"/>
      <ant dir="urlfilter-prefix" target="test"/>
      <ant dir="urlfilter-regex" target="test"/>
      <ant dir="urlfilter-suffix" target="test"/>
@@ -266,6 +268,7 @@
     <ant dir="urlfilter-domaindenylist" target="clean" />
     <ant dir="urlfilter-fast" target="clean"/>
     <ant dir="urlfilter-ignoreexempt" target="clean"/>
+    <ant dir="urlfilter-path" target="clean"/>
     <ant dir="urlfilter-prefix" target="clean"/>
     <ant dir="urlfilter-regex" target="clean"/>
     <ant dir="urlfilter-suffix" target="clean"/>

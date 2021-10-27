@@ -4,6 +4,10 @@
  */
 package org.apache.nutch.analysis.outlinks;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.Reader;
+import java.io.StringReader;
 import java.lang.invoke.MethodHandles;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -19,6 +23,8 @@ import org.apache.nutch.parse.ParseData;
 import org.apache.nutch.parse.ParseImpl;
 import org.apache.nutch.parse.ParseResult;
 import org.apache.nutch.protocol.Content;
+import org.apache.nutch.util.PrefixStringMatcher;
+import org.apache.nutch.util.TrieStringMatcher;
 import org.apache.nutch.util.URLUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,7 +48,16 @@ public class OutlinkParseFilter implements HtmlParseFilter {
       .getLogger(MethodHandles.lookup().lookupClass());
 
   private boolean requireDescendants = false;
+  private boolean approveAnchors = false;
   private Configuration conf;
+  private TrieStringMatcher trie = null;
+
+  public OutlinkParseFilter() throws IOException {
+  }
+
+  public OutlinkParseFilter(String stringRules) throws IOException {
+    trie = readConfiguration(new StringReader(stringRules));
+  }
 
   /**
    * Check the document's outlinks.
@@ -50,10 +65,15 @@ public class OutlinkParseFilter implements HtmlParseFilter {
   public ParseResult filter(Content content, ParseResult parseResult,
       HTMLMetaTags metaTags, DocumentFragment doc) {
 
+    ParseData parseData = null;
+    Parse parse = null;
+    String fromUrl = content.getUrl();
+    ParseResult filteredParseResult = parseResult;
+
+    // First we remove any outlinks that are not descendants of the seed.
     if (requireDescendants) {
-      String fromUrl = content.getUrl();
-      Parse parse = parseResult.get(fromUrl);
-      ParseData parseData = parse.getData();
+      parse = parseResult.get(fromUrl);
+      parseData = parse.getData();
       String seedUrl = parseData.getContentMeta().get("collection.seed");
       if (seedUrl == null) {
         seedUrl = fromUrl;
@@ -73,15 +93,65 @@ public class OutlinkParseFilter implements HtmlParseFilter {
         LOG.info("Outlinks has " + newOutlinks.length + " descendant url" + ((outlinks.length == 1) ? "" : "s"));
         parseData.setOutlinks(newOutlinks);
         String text = parse.getText();
-        ParseResult filteredParseResult = ParseResult.createParseResult(fromUrl,
+        filteredParseResult = ParseResult.createParseResult(fromUrl,
             new ParseImpl(text, parseData));  
-        return filteredParseResult;
-      } else {
-        return parseResult;
       }
-    } else {
-      return parseResult;
     }
+
+    // Next we remove outlinks that have an anchor exclusion (if applicable)
+    if (approveAnchors) {
+      parse = filteredParseResult.get(fromUrl);
+      parseData = parse.getData();
+      Outlink outlinks[] = parseData.getOutlinks();
+      if (outlinks.length > 0) {
+        // Cycle through all outlinks and build a list of excluded toURLs
+        // based on anchor matching.  A toURL could be on this list multiple
+        // times with different anchors.  Any anchor rejected will exclude all
+        // toURLs with that anchor.
+        List<String> excludedUrls = new ArrayList<String>();
+        for (Outlink outlink : outlinks) {
+          String originalAnchor = outlink.getAnchor();
+          if (originalAnchor != null && originalAnchor.length() > 0) {
+            String anchor = originalAnchor.trim().toLowerCase();
+            // This strips leading and trailing punctuation
+            anchor = anchor.replaceAll("^\\p{P}*(.*?)\\p{P}*$", "$1");
+            if (anchor.length() > 0) {
+              String longestMatch = trie.longestMatch(anchor);
+              if (longestMatch != null) {
+                // An exact match is if they are the same length.
+                if (longestMatch.length() == anchor.length()) {
+                  excludedUrls.add(outlink.getToUrl());
+                }
+              }
+            }
+          }
+        }
+        if (excludedUrls.size() > 0) {
+          LOG.info("Excluding {} URLs based on anchor filtering",
+              excludedUrls.size());
+          // Update the outlinks removing any with excluded URLs.
+          List<Outlink> filteredOutlinks = new ArrayList<Outlink>();
+          for (Outlink outlink : outlinks) {
+            String toUrl = outlink.getToUrl();
+            if (!excludedUrls.contains(toUrl)) {
+              // URL is not excluded, do not filter
+              filteredOutlinks.add(outlink);
+            }
+          }
+          Outlink newOutlinks[] = new Outlink[filteredOutlinks.size()];
+          newOutlinks = filteredOutlinks.toArray(newOutlinks);
+          LOG.info("Outlinks has " + newOutlinks.length + " approved anchor" +
+              ((newOutlinks.length == 1) ? "" : "s"));
+          parseData.setOutlinks(newOutlinks);
+          String text = parse.getText();
+          filteredParseResult = ParseResult.createParseResult(fromUrl,
+              new ParseImpl(text, parseData));
+        } else {
+          LOG.info("All Outlinks have approved anchors");
+        }
+      }
+    }
+    return filteredParseResult;
   }
 
   /**
@@ -127,9 +197,63 @@ public class OutlinkParseFilter implements HtmlParseFilter {
     this.conf = conf;
 
     requireDescendants = conf.getBoolean("db.descendant.links", false);
+    approveAnchors = conf.getBoolean("db.approve.anchors", false);
+
+    if (approveAnchors && trie == null) {
+      // Read in the anchor texts that will be filtered out.
+      String file = conf.get("urlfilter.anchor.file");
+      Reader reader = null;
+      if (file != null) {
+        LOG.info("Reading urlfitler.anchor.file rules file {}", file);
+        reader = conf.getConfResourceAsReader(file);
+      }
+
+      if (reader == null) {
+        LOG.warn("Missing rule file '{}': all Anchors will be accepted!",  file);
+        trie = new PrefixStringMatcher(new String[0]);
+      } else {
+        try {
+          trie = readConfiguration(reader);
+        } catch (IOException e) {
+          LOG.error("Error reading rule file {} {}" + file, e);
+        }
+      }
+    }
+
   }
 
   public Configuration getConf() {
     return this.conf;
+  }
+
+  /**
+   * Read in the anchor texts that will be excluded.
+   *
+   * @param reader
+   * @return
+   * @throws IOException
+   */
+  private TrieStringMatcher readConfiguration(Reader reader) throws IOException {
+
+    BufferedReader in = new BufferedReader(reader);
+    List<String> anchorTexts = new ArrayList<>();
+    String line;
+
+    while ((line = in.readLine()) != null) {
+      if (line.length() == 0)
+        continue;
+
+      char first = line.charAt(0);
+      switch (first) {
+      case ' ':
+      case '\n':
+      case '#': // skip blank & comment lines
+        continue;
+      default:
+        anchorTexts.add(line);
+      }
+    }
+
+    return new PrefixStringMatcher(anchorTexts);
   }
 }
