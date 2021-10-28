@@ -441,8 +441,8 @@ do
 
       pushd ../local
       if [ $mode = "distributed" ]; then
-          hadoop fs -get analysis/readseg/fetch/dump
-          hadoop fs -rm analysis/readseg/fetch/dump
+          hadoop fs -get -f analysis/readseg/fetch/dump
+          hadoop fs -rm -f analysis/readseg/fetch/dump
           hadoop fs -rmdir analysis/readseg/fetch
           hadoop fs -rmdir analysis/readseg
       else
@@ -453,7 +453,7 @@ do
 
       echo "Extracting crawlcomplete statistics from "$CRAWL_PATH"/crawldb"
       if [ $mode = "distributed" ]; then
-          hadoop fs -rm analysis/crawlcomplete/part-r*
+          hadoop fs -rm -f analysis/crawlcomplete/part-r*
           hadoop fs -rmdir analysis/crawlcomplete
       else
           if test -d "analysis/crawlcomplete"; then
@@ -467,8 +467,8 @@ do
 
       pushd ../local
       if [ $mode = "distributed" ]; then
-          hadoop fs -get analysis/crawlcomplete/part-r*
-          hadoop fs -rm analysis/crawlcomplete/part-r*
+          hadoop fs -get -f analysis/crawlcomplete/part-r*
+          hadoop fs -rm -f analysis/crawlcomplete/part-r*
           hadoop fs -rmdir analysis/crawlcomplete
           aws s3 cp --recursive --exclude "*" --include "seed*.txt" "$CRAWL_PATH" . && mv seed*.txt seeds.txt
       else
@@ -477,6 +477,7 @@ do
       fi
       ./bin/nutch formatcrawlstats
       ./bin/nutch updatestats -host search-cbdashboard-pqwg4w7np43yp3n5x24bdfjv2e.us-east-2.es.amazonaws.com -username $ES_USERNAME -password $ES_PASSWORD -index cbdashboard -input hosts.json
+      rm dump
       rm part-r*
       rm seeds.txt
       rm hosts.json
