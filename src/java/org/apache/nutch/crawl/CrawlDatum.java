@@ -531,16 +531,18 @@ public class CrawlDatum implements WritableComparable<CrawlDatum>, Cloneable {
     // metadata
     if (metaData != null) {
       for (Entry<Writable, Writable> e : metaData.entrySet()) {
-        buf.append(", ");
         // Do some cleanup of the names in the metadata package _pst_ => pst
         String key = e.getKey().toString().toLowerCase();
+        String value = e.getValue().toString();
         if (key.indexOf('_') == 0) {
           key = key.replace("_", "");
         }
         key = key.replace(".", "_");
         key = key.replace("-", "_");
-        buf.append("\"" + key + "\":");
-        String value = e.getValue().toString();
+        if (key.length() == 0 || value == null || value.length() == 0) {
+          continue;
+        }
+        buf.append(", \"" + key + "\":");
         if ("pst".equals(key) && value.indexOf(",") > 0) {
           // pst looks like "_pst_":"success(1), lastModified=1634050282000"
           // Break on the 1st comma and make two fields
