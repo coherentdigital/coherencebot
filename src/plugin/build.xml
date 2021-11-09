@@ -93,6 +93,7 @@
     <ant dir="scoring-orphan" target="deploy"/>
     <ant dir="scoring-similarity" target="deploy"/>
     <ant dir="scoring-metadata"  target="deploy"/>
+    <ant dir="scoring-withdrawn" target="deploy"/>
     <ant dir="subcollection" target="deploy"/>
     <ant dir="text-summarizer" target="deploy"/>
     <ant dir="tld" target="deploy"/>
@@ -160,6 +161,7 @@
      <ant dir="protocol-okhttp" target="test"/>
      <ant dir="scoring-orphan" target="test"/>
      <ant dir="scoring-metadata" target="test"/>
+     <ant dir="scoring-withdrawn" target="test"/>
      <ant dir="subcollection" target="test"/>
      <ant dir="text-summarizer" target="test"/>
      <ant dir="urlfilter-automaton" target="test"/>
@@ -259,6 +261,7 @@
     <ant dir="scoring-orphan" target="clean"/>
     <ant dir="scoring-similarity" target="clean"/>
     <ant dir="scoring-metadata" target="clean"/>
+    <ant dir="scoring-withdrawn" target="clean"/>
     <ant dir="subcollection" target="clean"/>
     <ant dir="text-summarizer" target="clean"/>
     <ant dir="tld" target="clean"/>

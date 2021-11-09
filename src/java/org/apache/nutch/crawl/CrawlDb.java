@@ -63,6 +63,7 @@ public class CrawlDb extends NutchTool implements Tool {
 
   public static final String CRAWLDB_PURGE_404 = "db.update.purge.404";
   public static final String CRAWLDB_PURGE_ORPHANS = "db.update.purge.orphans";
+  public static final String CRAWLDB_PURGE_WITHDRAWN = "db.update.purge.withdrawn";
 
   public static final String CURRENT_NAME = "current";
 
@@ -97,6 +98,7 @@ public class CrawlDb extends NutchTool implements Tool {
     conf.setBoolean(CrawlDbFilter.URL_NORMALIZING, normalize);
 
     boolean url404Purging = conf.getBoolean(CRAWLDB_PURGE_404, false);
+    boolean urlWithdrawnPurging = conf.getBoolean(CRAWLDB_PURGE_WITHDRAWN, false);
 
     LOG.info("CrawlDb update: starting at {}", sdf.format(start));
     LOG.info("CrawlDb update: db: {}", crawlDb);
@@ -105,6 +107,7 @@ public class CrawlDb extends NutchTool implements Tool {
     LOG.info("CrawlDb update: URL normalizing: {}", normalize);
     LOG.info("CrawlDb update: URL filtering: {}", filter);
     LOG.info("CrawlDb update: 404 purging: {}", url404Purging);
+    LOG.info("CrawlDb update: purge withdrawn: {}", urlWithdrawnPurging);
 
     for (int i = 0; i < segments.length; i++) {
       FileSystem sfs = segments[i].getFileSystem(getConf());
@@ -150,6 +153,14 @@ public class CrawlDb extends NutchTool implements Tool {
       LOG.info(
           "CrawlDb update: Total number of existing URLs in CrawlDb rejected by URL filters: {}",
           urlsFiltered);
+    }
+
+    if (urlWithdrawnPurging) {
+      long urlsWithdrawn = job.getCounters()
+          .findCounter("CrawlDB filter", "Withdrawn records removed").getValue();
+      LOG.info(
+          "CrawlDb update: Total number of existing URLs in CrawlDb withdrawn: {}",
+          urlsWithdrawn);
     }
 
     long end = System.currentTimeMillis();

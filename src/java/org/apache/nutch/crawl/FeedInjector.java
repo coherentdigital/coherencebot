@@ -90,6 +90,7 @@ public class FeedInjector extends NutchTool implements Tool {
   public static final String FEED_INJECTOR_ENDPOINT = "crawldb.inject.feed.endpoint";
   public static final String FEED_INJECTOR_PARAMS = "crawldb.inject.feed.params";
   public static final String FEED_INJECTOR_APIKEY = "crawldb.inject.feed.x-api-key";
+  public static final String FEED_INJECTOR_CRAWLPATH = "crawldb.inject.feed.crawlpath";
   public static final String FEED_INJECTOR_METADATA_PROPS = "crawldb.inject.feed.md";
 
   /**
@@ -126,6 +127,7 @@ public class FeedInjector extends NutchTool implements Tool {
     private ScoringFilters scfilters;
     private long curTime;
     private boolean url404Purging;
+    private boolean purgeWithdrawn;
     private String scope;
     private boolean filterNormalizeAll = false;
 
@@ -148,6 +150,7 @@ public class FeedInjector extends NutchTool implements Tool {
       curTime = conf.getLong("injector.current.time",
           System.currentTimeMillis());
       url404Purging = conf.getBoolean(CrawlDb.CRAWLDB_PURGE_404, false);
+      purgeWithdrawn = conf.getBoolean(CrawlDb.CRAWLDB_PURGE_WITHDRAWN, false);
     }
 
     /* Filter and normalize the input url */
@@ -251,6 +254,12 @@ public class FeedInjector extends NutchTool implements Tool {
         // remove 404 urls
         if (url404Purging && CrawlDatum.STATUS_DB_GONE == datum.getStatus()) {
           context.getCounter("injector", "urls_purged_404").increment(1);
+          return;
+        }
+        // Remove withdrawn pages
+        if (purgeWithdrawn && CrawlDatum.STATUS_DB_WITHDRAWN == datum.getStatus()) {
+          context.getCounter("injector",
+            "urls_purged_withdrawn").increment(1);
           return;
         }
 
@@ -585,6 +594,8 @@ public class FeedInjector extends NutchTool implements Tool {
             .findCounter("injector", "urls_purged_404").getValue();
         long urlsPurgedFilter = job.getCounters()
             .findCounter("injector", "urls_purged_filter").getValue();
+        long urlsPurgedWithdrawn = job.getCounters()
+            .findCounter("injector", "urls_purged_withdrawn").getValue();
         LOG.info(
             "FeedInjector: Total urls rejected by filters: " + urlsFiltered);
         LOG.info(
@@ -603,6 +614,11 @@ public class FeedInjector extends NutchTool implements Tool {
           LOG.info(
               "FeedInjector: Total urls with status gone removed from CrawlDb (db.update.purge.404): {}",
               urlsPurged404);
+        }
+        if (conf.getBoolean(CrawlDb.CRAWLDB_PURGE_WITHDRAWN, false)) {
+          LOG.info(
+              "FeedInjector: Total urls with status withdrawn removed from CrawlDb (db.update.purge.withdrawn): {}",
+              urlsPurgedWithdrawn);
         }
 
         long end = System.currentTimeMillis();

@@ -255,6 +255,7 @@
       <packageset dir="${plugins.dir}/scoring-orphan/src/java"/>
       <packageset dir="${plugins.dir}/scoring-similarity/src/java"/>
       <packageset dir="${plugins.dir}/scoring-metadata/src/java"/>
+      <packageset dir="${plugins.dir}/scoring-withdrawn/src/java"/>
       <packageset dir="${plugins.dir}/subcollection/src/java"/>
       <packageset dir="${plugins.dir}/text-summarizer/src/java"/>
       <packageset dir="${plugins.dir}/tld/src/java"/>
@@ -799,6 +800,7 @@
       <packageset dir="${plugins.dir}/scoring-orphan/src/java"/>
       <packageset dir="${plugins.dir}/scoring-similarity/src/java"/>
       <packageset dir="${plugins.dir}/scoring-metadata/src/java"/>
+      <packageset dir="${plugins.dir}/scoring-withdrawn/src/java"/>
       <packageset dir="${plugins.dir}/subcollection/src/java"/>
       <packageset dir="${plugins.dir}/text-summarizer/src/java"/>
       <packageset dir="${plugins.dir}/tld/src/java"/>
@@ -1325,6 +1327,8 @@
         <source path="${plugins.dir}/scoring-similarity/src/java/" />
         <source path="${plugins.dir}/scoring-metadata/src/java/" />
         <source path="${plugins.dir}/scoring-metadata/src/test" />
+        <source path="${plugins.dir}/scoring-withdrawn/src/java"/>
+        <source path="${plugins.dir}/scoring-withdrawn/src/test"/>
         <source path="${plugins.dir}/subcollection/src/java/" />
         <source path="${plugins.dir}/subcollection/src/test/" />
         <source path="${plugins.dir}/text-summarizer/src/java/" />

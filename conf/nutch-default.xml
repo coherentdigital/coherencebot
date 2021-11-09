@@ -592,6 +592,20 @@
 </property>
 
 <property>
+  <name>db.update.purge.withdrawn</name>
+  <value>false</value>
+  <description>If true, updatedb will permanently delete URLs who's seed
+  is no longer found among the sites this bot is responsible for.  This is
+  compatible only with using the FeedInjector to manage seeds.
+  You must also enable the 'scoring-withdrawn' plugin.
+  This scoring plugin will test if the URL's collection.seed is found
+  within the current list of collection seeds presented by the FeedInjecor.
+  If the seed is not present, the URL is marked as STATUS_DB_WITHDRAWN
+  and the updatedb step will remove any URL with that status.
+  </description>
+</property>
+
+<property>
     <name>crawldb.url.normalizers</name>
     <value>false</value>
     <description>
@@ -627,6 +641,14 @@
     <value></value>
     <description>
     The URL parameters of the API that is queried to obtain new URLs to crawl.
+    </description>
+</property>
+
+<property>
+    <name>crawldb.inject.feed.crawlpath</name>
+    <value></value>
+    <description>
+    The path to the crawl directory holding the crawldb and other directories
     </description>
 </property>
 

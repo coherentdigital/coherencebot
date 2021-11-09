@@ -44,6 +44,7 @@ public class CrawlDbFilter extends
 
   private boolean url404Purging;
   private boolean purgeOrphans;
+  private boolean purgeWithdrawn;
   private URLFilters filters;
   private URLNormalizers normalizers;
 
@@ -59,6 +60,7 @@ public class CrawlDbFilter extends
     urlNormalizers = conf.getBoolean(URL_NORMALIZING, false);
     url404Purging = conf.getBoolean(CrawlDb.CRAWLDB_PURGE_404, false);
     purgeOrphans = conf.getBoolean(CrawlDb.CRAWLDB_PURGE_ORPHANS, false);
+    purgeWithdrawn = conf.getBoolean(CrawlDb.CRAWLDB_PURGE_WITHDRAWN, false);
 
     if (urlFiltering) {
       filters = new URLFilters(conf);
@@ -89,6 +91,12 @@ public class CrawlDbFilter extends
     if (purgeOrphans && CrawlDatum.STATUS_DB_ORPHAN == value.getStatus()) {
       context.getCounter("CrawlDB filter",
         "Orphan records removed").increment(1);
+      return;
+    }
+    // Whether to remove withdrawn pages
+    if (purgeWithdrawn && CrawlDatum.STATUS_DB_WITHDRAWN == value.getStatus()) {
+      context.getCounter("CrawlDB filter",
+        "Withdrawn records removed").increment(1);
       return;
     }
     if (url != null && urlNormalizers) {
