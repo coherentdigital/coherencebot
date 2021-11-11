@@ -68,24 +68,18 @@ public class PathURLFilter implements URLFilter {
     try {
       if (url != null) {
         URI uri = new URI(url);
-        String path = uri.getPath();
-        if (path != null && path.length() > 0) {
-          if (path.endsWith("/")) {
-            path = path.substring(0, path.length() - 1);
-          }
-          String lastPath = path.substring(path.lastIndexOf('/') + 1);
-          // We exclude any URL with a lastPath matching a node from the trie.
-          // TODO: This has the potential to eliminate a seed; identify workaround.
-          if (lastPath.length() > 0 ) {
-            String longestMatch = trie.longestMatch(lastPath);
+        String uriPath = uri.getPath();
+        String[] paths = uriPath.split("/");
+        for (String path : paths ) {
+          // We exclude any URL with a path matching a node from the trie.
+          if (path.length() > 0 ) {
+            String longestMatch = trie.longestMatch(path);
             boolean sameLength = false;
             if (longestMatch != null) {
-              sameLength = (longestMatch.length() == lastPath.length()) ? true : false;
+              sameLength = (longestMatch.length() == path.length()) ? true : false;
             }
-            if (longestMatch == null || !sameLength ) {
-              return url;
-            } else {
-              LOG.info("Excluding {} due to match of last path {} to {}", url, lastPath, longestMatch);
+            if (longestMatch != null && sameLength ) {
+              LOG.info("Excluding {} due to match of path {} to {}", url, path, longestMatch);
               return null;
             }
           }

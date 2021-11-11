@@ -49,9 +49,11 @@ public class TestPathURLFilter extends TestCase {
       "https://www.example.com/section/reject?result=this-is-rejected",
       "https://www.example.com/reject/?result=this-is-rejected",
       "https://www.example.com/reject/someotherlastpath",
-      "https://www.example.com/?result=this-is-accepted",
+      "https://www.example.com//ok//reject/",  // test empty paths - reject case
+      "https://www.example.com?result=this-is-accepted",
       "https://www.example.com/rej",  // No reject, diff length
       "https://www.example.com/rejection",  // No reject, diff length
+      "https://www.example.com//rej//"  // test empty paths - accept case
   };
 
   private static String[] urlsModeReject = new String[] {
@@ -59,10 +61,12 @@ public class TestPathURLFilter extends TestCase {
     null,
     null,
     null,
-    urls[4],
-    urls[5],
+    null,
+    null,
     urls[6],
-    urls[7]
+    urls[7],
+    urls[8],
+    urls[9]
   };
 
   private PathURLFilter filter = null;
