@@ -77,6 +77,7 @@ public class WithdrawnScoringFilter extends AbstractScoringFilter {
             LOG.info("Cant read {}", seedPath);
         }
         String line;
+        SEEDS.clear();
         while ((line = br.readLine()) != null) {
           if (line.length() == 0)
             continue;
