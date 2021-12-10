@@ -74,12 +74,8 @@ public class ExtensionAnalysisScoringFilter implements ScoringFilter {
       String urlStr = url.toString().toLowerCase();
       for (String extension : extensionsToBoost) {
         if (urlStr.indexOf("." + extension) > 0) {
-          float score = datum.getScore();
-          if (score > 0.0f) {
-            return score * extensionBoost;
-          } else {
-            return extensionBoost;
-          }
+          float score = datum.getScore() * initSort;
+          return score + extensionBoost;
         }
       }
     }
@@ -117,6 +113,16 @@ public class ExtensionAnalysisScoringFilter implements ScoringFilter {
 
   public void updateDbScore(Text url, CrawlDatum old, CrawlDatum datum,
       List<CrawlDatum> inlinked) throws ScoringFilterException {
-    // nothing to do
+    if (extensionsToBoost != null && extensionsToBoost.length > 0) {
+      if (old == null)
+        old = datum;
+      String urlStr = url.toString().toLowerCase();
+      for (String extension : extensionsToBoost) {
+        if (urlStr.indexOf("." + extension) > 0) {
+          float adjust = old.getScore();
+          datum.setScore(adjust + extensionBoost);
+        }
+      }
+    }
   }
 }
