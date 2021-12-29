@@ -101,7 +101,7 @@ public class FormatCrawlStats extends Configured implements Tool {
           .map(FormatCrawlStats::ccToJson)
           .collect(Collectors.toList());
       for (JSONObject cc : hostCounts) {
-        if (cc.has("host")) {
+        if (cc != null && cc.has("host")) {
           String host = cc.getString("host");
           JSONObject hostMeta = hostsMeta.get(host);
           if (hostMeta == null) {
