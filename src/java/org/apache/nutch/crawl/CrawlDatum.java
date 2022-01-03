@@ -553,14 +553,14 @@ public class CrawlDatum implements WritableComparable<CrawlDatum>, Cloneable {
           buf.append("\"");
           buf.append(values[0].trim());
           buf.append("\", \"pst_message\":\"");
-          buf.append(values[1].trim());
+          buf.append(values[1].replace("\"","'").trim());
           buf.append("\"");
         } else {
           boolean isNumeric = value.chars().allMatch(Character::isDigit);
           if (!isNumeric) {
             buf.append("\"");
           }
-          buf.append(e.getValue());
+          buf.append(value.replace("\"","'"));
           if (!isNumeric) {
             buf.append("\"");
           }
