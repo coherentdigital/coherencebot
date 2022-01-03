@@ -130,7 +130,7 @@ public class FormatCrawlStats extends Configured implements Tool {
             hostMeta.put("fetched", 0);
           }
           hostsMeta.put(host, hostMeta);
-        } else {
+        } else if (cc != null) {
           LOG.error("No host field for {}", cc.toString());
         }
       }
