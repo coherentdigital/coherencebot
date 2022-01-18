@@ -415,7 +415,7 @@ do
   #   (both invertlinks and index accept multiple segments as input)
   # The latter is more efficient but the index is then updated later.
   echo "Link inversion"
-  __bin_nutch invertlinks "${commonOptions[@]}" "$CRAWL_PATH"/linkdb "$CRAWL_PATH"/segments/$SEGMENT -noNormalize -nofilter
+  __bin_nutch invertlinks "${commonOptions[@]}" "$CRAWL_PATH"/linkdb "$CRAWL_PATH"/segments/$SEGMENT -noNormalize
 
   echo "Dedup on crawldb"
   __bin_nutch dedup "${commonOptions[@]}" "$CRAWL_PATH"/crawldb -group "$DEDUP_GROUP"
