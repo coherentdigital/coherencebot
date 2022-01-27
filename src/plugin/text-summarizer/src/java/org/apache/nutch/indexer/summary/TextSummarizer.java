@@ -15,6 +15,8 @@ import org.apache.nutch.net.protocols.Response;
 import org.apache.nutch.parse.Parse;
 import org.apache.nutch.util.StringUtil;
 import org.slf4j.LoggerFactory;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 
 /**
@@ -156,5 +158,33 @@ public class TextSummarizer implements IndexingFilter {
 
   public Configuration getConf() {
     return this.conf;
+  }
+
+  /**
+   * Command line class to summarize a text file.
+   *
+   * @param argv path to file.txt
+   * @throws Exception
+   */
+  public static void main(String[] argv) throws Exception {
+
+    String usage = "java -jar some.jar TextSummarizer <input text file>";
+
+    if (argv.length < 1) {
+      System.out.println("usage:" + usage);
+      return;
+    }
+
+    Path fileName = Path.of(argv[0]);
+    String content = Files.readString(fileName);
+
+    SummaryTool summaryTool = new SummaryTool(StringUtil.cleanField(content));
+    String summary = summaryTool.createSummary(MAX_SUMMARY_LENGTH);
+    TextSummarizer ts = new TextSummarizer();
+
+    if (summary.length() > 0) {
+      summary = ts.clean(summary);
+      System.out.println(summary);
+    }
   }
 }
