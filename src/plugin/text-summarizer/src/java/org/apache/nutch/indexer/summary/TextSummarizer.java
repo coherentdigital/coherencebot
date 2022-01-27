@@ -168,10 +168,15 @@ public class TextSummarizer implements IndexingFilter {
    */
   public static void main(String[] argv) throws Exception {
 
-    String usage = "java -jar some.jar TextSummarizer <input text file>";
+    String build = "ant runtime && cd runtime/local";
+    String setup = "export TSCLASSPATH=plugins/text-summarizer/text-summarizer.jar:lib/apache-nutch-1.19-SNAPSHOT.jar:lib/hadoop-common-3.1.3.jar:lib/slf4j-api-1.7.30.jar:lib/slf4j-log4j12-1.7.30.jar:lib/log4j-1.2.17.jar:conf";
+    String usage = "java --class-path $TSCLASSPATH org.apache.nutch.indexer.summary.TextSummarizer <input text file>";
 
     if (argv.length < 1) {
-      System.out.println("usage:" + usage);
+      System.out.println("usage:");
+      System.out.println(build);
+      System.out.println(setup);
+      System.out.println(usage);
       return;
     }
 
