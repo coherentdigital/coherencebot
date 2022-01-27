@@ -16,7 +16,7 @@ import org.apache.nutch.parse.Parse;
 import org.apache.nutch.util.StringUtil;
 import org.slf4j.LoggerFactory;
 import java.nio.file.Files;
-import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 
 /**
@@ -180,8 +180,7 @@ public class TextSummarizer implements IndexingFilter {
       return;
     }
 
-    Path fileName = Path.of(argv[0]);
-    String content = Files.readString(fileName);
+    String content = new String(Files.readAllBytes(Paths.get(argv[0])));
 
     SummaryTool summaryTool = new SummaryTool(StringUtil.cleanField(content));
     String summary = summaryTool.createSummary(MAX_SUMMARY_LENGTH);
