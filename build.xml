@@ -106,7 +106,7 @@
   <!-- ====================================================== -->
   <!-- Compile the Java files                                 -->
   <!-- ====================================================== -->
-  <target name="compile" depends="compile-core, compile-plugins" description="--> compile all Java files"/>
+  <target name="compile" depends="compile-core, compile-plugins, compile-summarizer" description="--> compile all Java files"/>
 
   <target name="compile-core" depends="init, resolve-default" description="--> compile core Java files only">
     <javac
@@ -131,6 +131,43 @@
 
   <target name="compile-plugins" depends="init, resolve-default" description="--> compile plugins only">
     <ant dir="src/plugin" target="deploy" inheritAll="false"/>
+  </target>
+
+  <target name="compile-summarizer" depends="init, resolve-default" description="--> compile summarizer only">
+    <javac
+     encoding="${build.encoding}"
+     srcdir="${src.dir}"
+     includes="net/coherentdigital/**/*.java"
+     destdir="${build.classes}"
+     debug="${javac.debug}"
+     optimize="${javac.optimize}"
+     target="${javac.version}"
+     source="${javac.version}"
+     deprecation="${javac.deprecation}">
+      <compilerarg value="-Xlint:-path"/>
+      <classpath refid="classpath"/>
+    </javac>
+    <jar
+      jarfile="${build.dir}/text-summarizer.jar"
+      basedir="${build.classes}"
+      filesonly="true"
+      includes="net/coherentdigital/**/*.class"
+    />
+    <jar
+      jarfile="${build.dir}/text-summarizer.jar"
+      basedir="${src.dir}/net/coherentdigital/summary"
+      filesonly="true"
+      update="true"
+      includes="log4j.properties"
+    />
+    <jar
+      jarfile="${build.dir}/text-summarizer.jar"
+      filesonly="true"
+      update="true">
+        <zipfileset src="${build.dir}/lib/log4j-1.2.17.jar" includes="**/*.class"/>
+        <zipfileset src="${build.dir}/lib/slf4j-api-1.7.30.jar" includes="**/*.class"/>
+        <zipfileset src="${build.dir}/lib/slf4j-log4j12-1.7.30.jar" includes="**/*.class"/>
+    </jar>
   </target>
 
   <!-- ================================================================== -->
