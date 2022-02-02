@@ -167,6 +167,28 @@
         <zipfileset src="${build.dir}/lib/log4j-1.2.17.jar" includes="**/*.class"/>
         <zipfileset src="${build.dir}/lib/slf4j-api-1.7.30.jar" includes="**/*.class"/>
         <zipfileset src="${build.dir}/lib/slf4j-log4j12-1.7.30.jar" includes="**/*.class"/>
+        
+
+        <zipfileset src="${build.dir}/lib/annotations-2.17.121.jar" includes="**/*.class"/>
+        <zipfileset src="${build.dir}/lib/apache-client-2.17.121.jar" includes="**/*.class"/>
+        <zipfileset src="${build.dir}/lib/arns-2.17.121.jar" includes="**/*.class"/>
+        <zipfileset src="${build.dir}/lib/auth-2.17.121.jar" includes="**/*.class"/>
+        <zipfileset src="${build.dir}/lib/aws-core-2.17.121.jar" includes="**/*.class"/>
+        <zipfileset src="${build.dir}/lib/aws-query-protocol-2.17.121.jar" includes="**/*.class"/>
+        <zipfileset src="${build.dir}/lib/aws-xml-protocol-2.17.121.jar" includes="**/*.class"/>
+        <zipfileset src="${build.dir}/lib/http-client-spi-2.17.121.jar" includes="**/*.class"/>
+        <zipfileset src="${build.dir}/lib/json-utils-2.17.121.jar" includes="**/*.class"/>
+        <zipfileset src="${build.dir}/lib/metrics-spi-2.17.121.jar" includes="**/*.class"/>
+        <zipfileset src="${build.dir}/lib/netty-nio-client-2.17.121.jar" includes="**/*.class"/>
+        <zipfileset src="${build.dir}/lib/profiles-2.17.121.jar" includes="**/*.class"/>
+        <zipfileset src="${build.dir}/lib/protocol-core-2.17.121.jar" includes="**/*.class"/>
+        <zipfileset src="${build.dir}/lib/regions-2.17.121.jar" includes="**/*.class"/>
+        <zipfileset src="${build.dir}/lib/s3-2.17.121.jar" includes="**/*.class"/>
+        <zipfileset src="${build.dir}/lib/sdk-core-2.17.121.jar" includes="**/*.class"/>
+        <zipfileset src="${build.dir}/lib/third-party-jackson-core-2.17.121.jar" includes="**/*.class"/>
+        <zipfileset src="${build.dir}/lib/utils-2.17.121.jar" includes="**/*.class"/>
+        <zipfileset src="${build.dir}/lib/reactive-streams-1.0.3.jar" includes="**/*.class"/>
+        
     </jar>
   </target>
 
