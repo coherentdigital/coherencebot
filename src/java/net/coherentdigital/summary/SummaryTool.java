@@ -2,6 +2,8 @@ package net.coherentdigital.summary;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.regex.Pattern;
+
 import org.slf4j.LoggerFactory;
 
 class SummaryTool {
@@ -11,6 +13,8 @@ class SummaryTool {
   private static final int MAX_CANDIDATES = 500;
   private static final int MAX_SENTENCE_LENGTH = 400;
   private static final int MIN_SENTENCE_LENGTH = 20;
+  // These number and punct words will not be used when counting co-occurrence
+  private Pattern UNWANTED_WORD = Pattern.compile("[\\d\\p{Sc}\\p{Punct}]");
 
   ArrayList<Sentence> sentences, contentSummary;
   int noOfSentences;
@@ -23,6 +27,10 @@ class SummaryTool {
       // In PDF extracts; spaces are often missing between sentences.
       // This adds a space between any period followed by an uppercase letter.
       textToSummarize = fullText.replaceAll("([^\\s]+\\.)(\\p{Lu})", "$1 $2");
+      // Reduce any sequence of multiple period-space to a single period-space
+      textToSummarize = textToSummarize.replaceAll("[.\\s]{2,}", ". ");
+      // Reduce any sequence of multiple periods to a single period
+      textToSummarize = textToSummarize.replaceAll("[.]{2,}", ".");
       // Mark all the ends of sentences
       textToSummarize = textToSummarize.replaceAll("([^\\s]{2,}[\\.\\?])\\s+", "$1~SENT~");
     }
@@ -62,6 +70,12 @@ class SummaryTool {
 
     for (String str1Word : str1.value.split("\\s+")) {
       for (String str2Word : str2.value.split("\\s+")) {
+        // Ignore words that are just numeric
+        String wordMinusNumbersAndPunct =
+            UNWANTED_WORD.matcher(str2Word).replaceAll("");
+        if (wordMinusNumbersAndPunct.length() == 0) {
+          continue;
+        }
         if (str1Word.compareToIgnoreCase(str2Word) == 0) {
           commonCount++;
         }

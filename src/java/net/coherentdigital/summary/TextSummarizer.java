@@ -27,9 +27,6 @@ public class TextSummarizer  {
       .getLogger(TextSummarizer.class);
 
   private final static int MAX_SUMMARY_LENGTH = 5;
-  // private final BasicAWSCredentials awsCreds = new BasicAWSCredentials("AKIA23B6R4NTHYGSPNVL",
-  //       "UEIYpYllUiBdzuY2Mm+mcOWK22K6MO3pdhT4YcWR");
-  // private final AmazonS3 amazonS3Client = AmazonS3ClientBuilder.standard().withRegion(Regions.fromName("us-east-2")).build();
   
 
   /**
