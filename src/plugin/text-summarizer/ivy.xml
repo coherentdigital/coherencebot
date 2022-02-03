@@ -36,10 +36,6 @@
   </publications>
 
   <dependencies>
-    <dependency org="com.amazonaws" name="aws-java-sdk-s3" rev="1.11.954"/>
-    <dependency org="com.amazonaws" name="aws-java-sdk-core" rev="1.11.954"/>
-    <dependency org="com.amazonaws" name="aws-lambda-java-core" rev="1.2.1"/>
-    <dependency org="com.amazonaws" name="aws-lambda-java-events" rev="3.11.0"/>
   </dependencies>
   
 </ivy-module>

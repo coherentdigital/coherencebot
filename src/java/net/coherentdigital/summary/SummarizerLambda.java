@@ -27,51 +27,43 @@ import java.io.InputStream;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 
-
-public class SummarizerLambda implements RequestHandler<SQSEvent, Void>{
+public class SummarizerLambda implements RequestHandler<SQSEvent, Void> {
 
 	public final static org.slf4j.Logger LOG = LoggerFactory.getLogger(TextSummarizer.class);
 
-    @Override
-    public Void handleRequest(SQSEvent event, Context context)
-    {
-	    for(SQSMessage msg : event.getRecords()){
-	    	try {
-		        String body = new String(msg.getBody());
-			    JSONParser parser = new JSONParser();
-			    JSONObject jo = (JSONObject)parser.parse(body);
+	@Override
+	public Void handleRequest(SQSEvent event, Context context) {
+		for (SQSMessage msg : event.getRecords()) {
+			try {
+				String body = new String(msg.getBody());
+				JSONParser parser = new JSONParser();
+				JSONObject jo = (JSONObject) parser.parse(body);
 
-		    	String bucket = (String)jo.get("bucket");
-		    	String key = (String)jo.get("key");
-		    	String outKey = (String)jo.get("outKey");
-		    	int count = ((Long)jo.get("count")).intValue();
+				String bucket = (String) jo.get("bucket");
+				String key = (String) jo.get("key");
+				String outKey = (String) jo.get("outKey");
+				int count = ((Long) jo.get("count")).intValue();
 
-		    	LOG.info(String.format("Extracting summary from s3://%s/%s", bucket, key));
+				LOG.info(String.format("Extracting summary from s3://%s/%s", bucket, key));
 
-		    	Region region = Region.US_EAST_2;
-		    	S3Client s3 = S3Client.builder().region(region).httpClientBuilder(ApacheHttpClient.builder()).build();
-		    	GetObjectRequest getObjectRequest = GetObjectRequest.builder()
-			    	.bucket(bucket)
-			    	.key(key)
-			    	.build();
+				Region region = Region.US_EAST_2;
+				S3Client s3 = S3Client.builder().region(region).httpClientBuilder(ApacheHttpClient.builder()).build();
+				GetObjectRequest getObjectRequest = GetObjectRequest.builder().bucket(bucket).key(key).build();
 
-		    	ResponseInputStream<GetObjectResponse> responseInputStream = s3.getObject(getObjectRequest);
-		    	String content = new String(responseInputStream.readAllBytes(), StandardCharsets.UTF_8);
-		    	String summary = new TextSummarizer().summarize(content, count);
+				ResponseInputStream<GetObjectResponse> responseInputStream = s3.getObject(getObjectRequest);
+				String content = new String(responseInputStream.readAllBytes(), StandardCharsets.UTF_8);
+				String summary = new TextSummarizer().summarize(content, count);
 
-		    	PutObjectRequest objectRequest = PutObjectRequest.builder()
-			    	.bucket(bucket)
-			    	.key(outKey)
-			    	.build();
+				PutObjectRequest objectRequest = PutObjectRequest.builder().bucket(bucket).key(outKey).build();
 
-		    	s3.putObject(objectRequest, RequestBody.fromString(summary));
+				s3.putObject(objectRequest, RequestBody.fromString(summary));
 
-		    	LOG.info(String.format("Summary has been successfully extracted into s3://%s/%s", bucket, outKey));
-	    	} catch (Exception e) {
-	        	LOG.error("Extraction failed.", e);
-	      	}
-	    }
+				LOG.info(String.format("Summary has been successfully extracted into s3://%s/%s", bucket, outKey));
+			} catch (Exception e) {
+				LOG.error("Extraction failed.", e);
+			}
+		}
 
-    	return null;
-    }
+		return null;
+	}
 }
