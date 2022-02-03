@@ -6,28 +6,16 @@ package net.coherentdigital.summary;
 import org.slf4j.LoggerFactory;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import software.amazon.awssdk.core.sync.RequestBody;
-import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.services.s3.model.CreateBucketConfiguration;
-import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
-import software.amazon.awssdk.services.s3.model.DeleteBucketRequest;
-import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
-import software.amazon.awssdk.services.s3.model.HeadBucketRequest;
-import software.amazon.awssdk.services.s3.model.PutObjectRequest;
-import software.amazon.awssdk.services.s3.model.S3Exception;
-import software.amazon.awssdk.services.s3.S3Client;
-import java.io.IOException;
 
 /**
  * An POJO that computes a summary field of its text input.
  */
-public class TextSummarizer  {
+public class TextSummarizer {
 
   public final static org.slf4j.Logger LOG = LoggerFactory
       .getLogger(TextSummarizer.class);
 
   private final static int MAX_SUMMARY_LENGTH = 5;
-  
 
   /**
    * Remove undesirable junk from a text summary.
@@ -46,6 +34,16 @@ public class TextSummarizer  {
       returnText = returnText.replaceAll("\\s+", " ").trim();
     }
     return returnText;
+  }
+
+  public String summarize(String text, int count) {
+    SummaryTool summaryTool = new SummaryTool(text.replaceAll("�", ""));
+    String summary = summaryTool.createSummary(count);
+    
+    if (summary.length() > 0) {
+      summary = clean(summary);
+    }
+    return summary;
   }
 
   /**
@@ -77,23 +75,13 @@ public class TextSummarizer  {
       }
     }
 
-
     SummaryTool summaryTool = new SummaryTool(content.replaceAll("�", ""));
     String summary = summaryTool.createSummary(count);
     TextSummarizer ts = new TextSummarizer();
-
-    String bucketName = "coherent-commons";
-    String key = "artifacts/file/fulltext/0074c804-dd1d-4079-a6e2-56e80b76c9bf.txt";
-
-    
-     Region region = Region.US_WEST_2;
-     S3Client s3 = S3Client.builder().region(region).build();
-
 
     if (summary.length() > 0) {
       summary = ts.clean(summary);
       System.out.println(summary);
     }
   }
-
 }
