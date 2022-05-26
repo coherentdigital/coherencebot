@@ -49,6 +49,7 @@ public class CriteriaIndexer implements IndexingFilter {
       .getLogger(CriteriaIndexer.class);
 
   private Configuration conf;
+  private int minLength = 4000;
   private static Pattern LINE_SPLIT = Pattern.compile("(^.+$)+",
       Pattern.MULTILINE);
   private static Pattern NAME_VALUE_SPLIT = Pattern.compile("(.*?)=(.*)");
@@ -76,9 +77,10 @@ public class CriteriaIndexer implements IndexingFilter {
       CrawlDatum datum, Inlinks inlinks) throws IndexingException {
 
     int contentLength = parse.getText().length();
-    if (contentLength < 4000) {
+    if (contentLength < this.minLength) {
       LOG.info("Skipping document " + url.toString()
-          + " due to insuffient text length");
+          + " due to insuffient text length " + contentLength
+          + " < " + this.minLength);
       return null;
     }
     // Choose the best title from title, heading and anchor.
@@ -550,6 +552,7 @@ public class CriteriaIndexer implements IndexingFilter {
    */
   public void setConf(Configuration conf) {
     this.conf = conf;
+    this.minLength = conf.getInt("index.criteria.minlength", 4000);
     String value = conf.get("index.criteria.filters", null);
     if (value != null) {
       LOG.debug("Parsing index.criteria.filters property");

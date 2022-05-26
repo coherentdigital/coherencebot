@@ -2296,6 +2296,12 @@ visit https://cwiki.apache.org/confluence/display/NUTCH/SimilarityScoringFilter 
   <description>Allows indexing-time rejection of documents matching field content tests.</description>
 </property>
 
+<property>
+  <name>index.criteria.minlength</name>
+  <value>4000</value>
+  <description>Documents smaller than this will be filtered</description>
+</property>
+
 <!-- parse-metatags plugin properties -->
 <property>
   <name>metatags.names</name>
