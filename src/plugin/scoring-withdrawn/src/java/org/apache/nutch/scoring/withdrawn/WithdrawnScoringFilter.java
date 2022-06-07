@@ -63,7 +63,7 @@ public class WithdrawnScoringFilter extends AbstractScoringFilter {
       if (feedPath.indexOf("s3://") == 0) {
         String feedParams = conf.getTrimmed(FeedInjector.FEED_INJECTOR_PARAMS, "");
         String slug = feedParams.replace('&', '-').replace('=', '-');
-        seedPath = feedPath + "/crawl/crawldb/" + "seeds-" + slug + ".txt";
+        seedPath = feedPath + "/crawl/" + "seeds-" + slug + ".txt";
       } else {
         seedPath = feedPath;
       }
