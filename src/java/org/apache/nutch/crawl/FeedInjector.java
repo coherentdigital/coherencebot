@@ -92,6 +92,7 @@ public class FeedInjector extends NutchTool implements Tool {
   public static final String FEED_INJECTOR_APIKEY = "crawldb.inject.feed.x-api-key";
   public static final String FEED_INJECTOR_CRAWLPATH = "crawldb.inject.feed.crawlpath";
   public static final String FEED_INJECTOR_METADATA_PROPS = "crawldb.inject.feed.md";
+  public static final String FEED_INJECTOR_AGENT_NAME = "http.agent.name";
 
   /**
    * metadata key reserved for setting a custom fetchInterval for a specific URL
@@ -394,6 +395,7 @@ public class FeedInjector extends NutchTool implements Tool {
     String feedEndpoint = conf.getTrimmed(FEED_INJECTOR_ENDPOINT);
     String feedParams = conf.getTrimmed(FEED_INJECTOR_PARAMS);
     String feedApiKey = conf.getTrimmed(FEED_INJECTOR_APIKEY);
+    String feedAgent = conf.getTrimmed(FEED_INJECTOR_AGENT_NAME);
     // String[] feedMetaProps = conf.getStrings(FEED_INJECTOR_METADATA_PROPS);
     URL seedFeedUrl = null;
 
@@ -413,6 +415,7 @@ public class FeedInjector extends NutchTool implements Tool {
         con.setConnectTimeout(10000);
         con.setReadTimeout(30000);
         con.addRequestProperty("x-api-key", feedApiKey);
+        con.addRequestProperty("User-Agent", feedAgent);
         con.connect();
 
         // Read the API response into a byte array.
