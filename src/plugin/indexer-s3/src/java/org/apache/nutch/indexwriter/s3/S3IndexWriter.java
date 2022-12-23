@@ -74,6 +74,7 @@ public class S3IndexWriter implements IndexWriter {
   private String template;
   private String validator;
   private String s3InvalidFolder;
+  private String userAgent;
   private AmazonS3 s3 = null;
 
   @Override
@@ -142,6 +143,8 @@ public class S3IndexWriter implements IndexWriter {
       LOG.error(message);
       throw new RuntimeException(message);
     }
+
+    userAgent = getConf().getTrimmed("http.agent.name");
 
     s3 = makeClient(parameters);
   }
@@ -395,6 +398,7 @@ public class S3IndexWriter implements IndexWriter {
       con.setRequestMethod("POST");
       con.setRequestProperty("Content-Type", "application/json; utf-8");
       con.setRequestProperty("Accept", "*/*");
+      con.setRequestProperty("User-Agent", userAgent);
       con.setConnectTimeout(10000);
       con.setReadTimeout(60000);
       con.setDoInput(true);

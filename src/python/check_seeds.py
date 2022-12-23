@@ -123,7 +123,8 @@ def get_seeds(collection_endpoint, cluster):
             headers = {
                 'Content-Type': 'application/json; charset=utf-8',
                 'accept': 'application/json',
-                'x-api-key': 'pv=f=-q930xvsfuf(z@o-*ha^!sm2l7vncau_lgr@6m)k$voxk'
+                'x-api-key': 'pv=f=-q930xvsfuf(z@o-*ha^!sm2l7vncau_lgr@6m)k$voxk',
+                'User-Agent': 'CoherenceBot'
             },
             params = params
         )

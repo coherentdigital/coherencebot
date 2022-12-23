@@ -60,6 +60,7 @@ public class TestOrgIndexerTest {
     filter = new OrgIndexer();
     conf.set("index.org.serviceurl","https://commons.coherentdigital.net/api/orgs/all/autocomplete/private/?format=json&q=");
     conf.set("index.org.x-api-key","pv=f=-q930xvsfuf(z@o-*ha^!sm2l7vncau_lgr@6m)k$voxk");
+    conf.set("http.agent.name","CoherenceBot");
   }
 
   /**

@@ -60,6 +60,7 @@ public class OrgIndexer implements IndexingFilter {
   private Configuration conf;
   private String serviceUrl;
   private String xApiKey;
+  private String userAgent;
 
   /**
    * The {@link OrgIndexer} filter object which adds fields as per configuration
@@ -162,6 +163,7 @@ public class OrgIndexer implements IndexingFilter {
         con.setConnectTimeout(5000);
         con.setReadTimeout(10000);
         con.addRequestProperty("x-api-key", this.xApiKey);
+        con.addRequestProperty("User-Agent", this.userAgent);
         con.connect();
 
         // Read the API response into a byte array
@@ -229,6 +231,17 @@ public class OrgIndexer implements IndexingFilter {
         if (jo.has("org_type") && !jo.getString("org_type").equals("null")) {
           fields.put("organization.type", jo.getString("org_type"));
         }
+        if (jo.has("domains")) {
+          JSONArray domains = jo.getJSONArray("domains");
+          String domainsStr = "";
+          for (int domIndex = 0; domIndex < domains.length(); domIndex++) {
+            if (domainsStr.length() > 0) {
+              domainsStr += ";";
+            }
+            domainsStr += domains.getString(domIndex);
+          }
+          fields.put("organization.domains", domainsStr);
+        }
         cache.put(query, fields);
       } catch (Exception e) {
         LOG.error("Unable to obtain Org metadata. " + e.toString());
@@ -252,6 +265,8 @@ public class OrgIndexer implements IndexingFilter {
     if (this.xApiKey == null) {
       LOG.error("Please set index.org.x-api-key to use the index-org plugin");
     }
+
+    this.userAgent = conf.getTrimmed("http.agent.name");
   }
 
   /**
