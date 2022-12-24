@@ -209,7 +209,7 @@ public class OrgIndexer implements IndexingFilter {
         }
 
         if (jo.has("slug")) {
-          fields.put("organization.id", jo.getString("slug"));
+          fields.put("organization.slug", jo.getString("slug"));
         }
         if (jo.has("name")) {
           fields.put("organization.name", jo.getString("name"));
