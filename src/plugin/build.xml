@@ -73,6 +73,7 @@
     <ant dir="parse-tika" target="deploy"/>
     <ant dir="parse-translate" target="deploy"/>
     <ant dir="parse-zip" target="deploy"/>
+    <ant dir="parsefilter-archive" target="deploy"/>
     <ant dir="parsefilter-debug" target="deploy"/>
     <ant dir="parsefilter-naivebayes" target="deploy"/>
     <ant dir="parsefilter-outlinks" target="deploy"/>
@@ -154,6 +155,7 @@
      <ant dir="parse-tika" target="test"/>
      <ant dir="parse-translate" target="test"/>
      <ant dir="parse-zip" target="test"/>
+     <ant dir="parsefilter-archive" target="test"/>
      <ant dir="parsefilter-regex" target="test"/>
      <ant dir="protocol-file" target="test"/>
      <ant dir="protocol-http" target="test"/>
@@ -241,6 +243,7 @@
     <ant dir="parse-tika" target="clean"/>
     <ant dir="parse-translate" target="clean"/>
     <ant dir="parse-zip" target="clean"/>
+    <ant dir="parsefilter-archive" target="clean" />
     <ant dir="parsefilter-debug" target="clean" />
     <ant dir="parsefilter-naivebayes" target="clean" />
     <ant dir="parsefilter-outlinks" target="clean" />

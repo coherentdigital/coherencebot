@@ -1720,6 +1720,33 @@ CAUTION: Set the parser.timeout to -1 or a bigger value than 30, when using this
 </property>
 
 <property>
+  <name>parsefilter.archive.s3bucket</name>
+  <value></value>
+  <description>The s3 Bucket in which ArchiveParseFilter will store its result.  Access requires environment variables
+  AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY to be set to valid AWS credentials</description>
+</property>
+
+<property>
+  <name>parsefilter.archive.s3prefix</name>
+  <value></value>
+  <description>The s3 folder in which ArchiveParseFilter will store its result.  defaults to file/coherencebot-archive</description>
+</property>
+
+<property>
+  <name>parsefilter.archive.credentials</name>
+  <value></value>
+  <description>Two values separated by colon
+    AWS_ACCESSKEY_ID:AWS_SECRET_ACCESSS_KEY
+  </description>
+</property>
+
+<property>
+  <name>parsefilter.archive.s3region</name>
+  <value></value>
+  <description>The s3 region for the bucket named in parsefilter.archive.s3bucket</description>
+</property>
+
+<property>
   <name>parsefilter.naivebayes.wordlist</name>
   <value>naivebayes-wordlist.txt</value>
   <description>Put the name of the file you want to be used as a list of 
@@ -1747,6 +1774,12 @@ CAUTION: Set the parser.timeout to -1 or a bigger value than 30, when using this
   <description>Three values separated by colon
     AWS_ACCESSKEY_ID:AWS_SECRET_ACCESSS_KEY:THUMBIO_APIKEY
   </description>
+</property>
+
+<property>
+  <name>parsefilter.thumb.s3region</name>
+  <value></value>
+  <description>The s3 region for the bucket named in parsefilter.thumb.s3bucket</description>
 </property>
 
 <property>
