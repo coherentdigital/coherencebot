@@ -7,7 +7,6 @@ import requests
 import urllib.robotparser
 from urllib.parse import urlparse
 from requests.exceptions import Timeout
-from pickle import NONE
 
 def main():
     """
