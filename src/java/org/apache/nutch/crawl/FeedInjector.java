@@ -47,6 +47,7 @@ import org.apache.nutch.util.NutchConfiguration;
 import org.apache.nutch.util.NutchJob;
 import org.apache.nutch.util.NutchTool;
 import org.apache.nutch.util.TimingUtil;
+import org.apache.nutch.util.URLUtil;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
@@ -446,6 +447,7 @@ public class FeedInjector extends NutchTool implements Tool {
                 String collectionId = null;
                 String collectionTitle = null;
                 String collectionOrgId = null;
+                String collectionDomains = null;
                 JSONObject collection = ja.getJSONObject(i);
                 if (collection.has("uuid")) {
                   collectionId = collection.getString("uuid");
@@ -456,19 +458,38 @@ public class FeedInjector extends NutchTool implements Tool {
                 if (collection.has("title")) {
                   collectionTitle = collection.getString("title");
                 }
+                StringBuffer domains = new StringBuffer();
+                // Add the domain of the seed to the list of domains
+                domains.append(URLUtil.getDomainName(seedUrl).toLowerCase());
                 if (collection.has("org")) {
                   JSONObject org = collection.getJSONObject("org");
                   if (org.has("slug")) {
                     collectionOrgId = org.getString("slug");
                   }
+                  // Add the domains assigned to the org to the list of domains
+                  if (org.has("domains")) {
+                    JSONArray jaDomains = org.getJSONArray("domains");
+                    if (jaDomains.length() > 0) {
+                      for (int j = 0; j < jaDomains.length(); j++) {
+                        String domain = ja.getString(j);
+                        if (domains.length() > 0) {
+                          domains.append(";");
+                        }
+                        domains.append(domain);
+                      }
+                    }
+                  }
                 }
+                collectionDomains = domains.toString();
                 if (seedUrl != null && collectionId != null
-                    && collectionTitle != null && collectionOrgId != null) {
+                    && collectionTitle != null && collectionOrgId != null
+                    && collectionDomains != null) {
                   // We have all the metadata
                   String seedFileLine = seedUrl + "\tcollection.title=" + collectionTitle
                       + "\tcollection.id=" + collectionId
                       + "\tcollection.seed=" + seedUrl
-                      + "\torg.slug="+ collectionOrgId;
+                      + "\torg.slug=" + collectionOrgId
+                      + "\torg.domains=" + collectionDomains;
                   seedUrls.add(seedFileLine);
                 } else {
                   LOG.warn("Row " + i + " in " + seedFeedUrl.toString()

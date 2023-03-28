@@ -109,6 +109,11 @@ public class LinkDb extends NutchTool implements Tool {
                     throws IOException, InterruptedException {
       String fromUrl = key.toString();
       String fromHost = getHost(fromUrl);
+      String allowedDomainsStr = parseData.getContentMeta().get("org.domains");
+      String allowedDomains[] = new String[0];
+      if (allowedDomainsStr != null) {
+        allowedDomains = allowedDomainsStr.split(";");
+      }
       if (urlNormalizers != null) {
         try {
           fromUrl = urlNormalizers
@@ -134,37 +139,45 @@ public class LinkDb extends NutchTool implements Tool {
         Outlink outlink = outlinks[i];
         String toUrl = outlink.getToUrl();
 
-        if (ignoreInternalLinks) {
-          String toHost = getHost(toUrl);
-          if (toHost == null || toHost.equals(fromHost)) { // internal link
-            continue; // skip it
-          }
-        } else if (ignoreExternalLinks) {
-          String toHost = getHost(toUrl);
-          if (toHost == null || !toHost.equals(fromHost)) { // external link skip it
-            continue;
-          }
-        } else if (descendantLinks) {
+        if (descendantLinks) {
           try {
             String fromDomain = URLUtil.getDomainName(fromUrl).toLowerCase();
             String toDomain = URLUtil.getDomainName(toUrl).toLowerCase();
+            String toHost = URLUtil.getHost(toUrl).toLowerCase();
             String fromPath = new URL(fromUrl).getPath().toLowerCase();
             String toPath = new URL(toUrl).getPath().toLowerCase();
             String fromChk = fromDomain + fromPath;
             String toChk = toDomain + toPath;
 
-            // Is the outlink not a descendant?
+            // Is the toUrl not a descendant?
             if (toChk.indexOf(fromChk) != 0) {
               boolean isPdf = (toUrl.indexOf(".pdf") > 0) ? true : false;
               // Handle the special case of PDFs from the same domain are allowed.
-              if (!(toDomain.equals(fromDomain) && isPdf)) { // not an allowed descendant link
-                continue;  // skip it
+              if (isPdf) {
+                for (String pdfDomain : allowedDomains) {
+                  if (!(pdfDomain.equals(toDomain) || pdfDomain.equals(toHost))) {
+                    continue; // Skip it
+                  }
+                }
               }
             }
           } catch (MalformedURLException mue) {
             continue;
           }
         }
+        if (ignoreInternalLinks) {
+          String toHost = getHost(toUrl);
+          if (toHost == null || toHost.equals(fromHost)) { // internal link
+            continue; // skip it
+          }
+        }
+        if (ignoreExternalLinks) {
+          String toHost = getHost(toUrl);
+          if (toHost == null || !toHost.equals(fromHost)) { // external link
+            continue; // skip it
+          }
+        }
+
         if (urlNormalizers != null) {
           try {
             // normalize the url
@@ -232,9 +245,13 @@ public class LinkDb extends NutchTool implements Tool {
     if (conf.getBoolean(IGNORE_EXTERNAL_LINKS, false)) {
       LOG.info("LinkDb: external links will be ignored.");
     }
+    if (conf.getBoolean(DESCENDANT_LINKS, false)) {
+      LOG.info("LinkDb: descendant links will be included.");
+    }
     if (conf.getBoolean(IGNORE_INTERNAL_LINKS, true)
-            && conf.getBoolean(IGNORE_EXTERNAL_LINKS, false)) {
-      LOG.warn("LinkDb: internal and external links are ignored! "
+      && conf.getBoolean(IGNORE_EXTERNAL_LINKS, false)
+      && !conf.getBoolean(DESCENDANT_LINKS, false)) {
+      LOG.warn("LinkDb: internal, external and descendant links are ignored! "
               + "Nothing to do, actually. Exiting.");
       LockUtil.removeLockFile(fs, lock);
       return;
@@ -454,8 +471,8 @@ public class LinkDb extends NutchTool implements Tool {
       Object segments = args.get(Nutch.ARG_SEGMENTS);
       ArrayList<String> segmentList = new ArrayList<>(); 
       if(segments instanceof ArrayList) {
-        segmentList = (ArrayList<String>)segments; }
-      else if(segments instanceof Path){
+        segmentList = (ArrayList<String>)segments;
+      } else if(segments instanceof Path){
         segmentList.add(segments.toString());
       }
 

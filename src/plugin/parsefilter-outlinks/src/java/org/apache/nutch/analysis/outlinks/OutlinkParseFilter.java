@@ -78,14 +78,22 @@ public class OutlinkParseFilter implements HtmlParseFilter {
       if (seedUrl == null) {
         seedUrl = fromUrl;
       }
+      String allowedDomainsStr = parseData.getContentMeta().get("org.domains");
+      String allowedDomains[] = new String[0];
+      if (allowedDomainsStr != null) {
+        allowedDomains = allowedDomainsStr.split(";");
+      }
+
       Outlink outlinks[] = parseData.getOutlinks();
       if (outlinks.length > 0) {
         List<Outlink> filteredOutlinks = new ArrayList<Outlink>();
         LOG.info("Checking " + outlinks.length + " outlinks for descendants");
         for (Outlink outlink : outlinks) {
           String toUrl = outlink.getToUrl();
-          if (validateDescendant(seedUrl, toUrl)) {
+          if (validateDescendant(seedUrl, toUrl, allowedDomains)) {
             filteredOutlinks.add(outlink);
+          } else {
+            LOG.info("Rejecting outlink {}", outlink);
           }
         }
         Outlink newOutlinks[] = new Outlink[filteredOutlinks.size()];
@@ -136,6 +144,8 @@ public class OutlinkParseFilter implements HtmlParseFilter {
             if (!excludedUrls.contains(toUrl)) {
               // URL is not excluded, do not filter
               filteredOutlinks.add(outlink);
+            } else {
+              LOG.info("Rejecting url by anchor {}", toUrl);
             }
           }
           Outlink newOutlinks[] = new Outlink[filteredOutlinks.size()];
@@ -165,9 +175,10 @@ public class OutlinkParseFilter implements HtmlParseFilter {
    *
    * @param fromUrl the referring URL
    * @param toUrl the outlink
+   * @param allowedDomains - valid domains for PDFs
    * @return true if the outlink is a descendant of the referrer.
    */
-  protected boolean validateDescendant(String fromUrl, String toUrl) {
+  protected boolean validateDescendant(String fromUrl, String toUrl, String allowedDomains[]) {
     try {
       String fromDomain = URLUtil.getDomainName(fromUrl).toLowerCase();
       String toDomain = URLUtil.getDomainName(toUrl).toLowerCase();
@@ -181,15 +192,28 @@ public class OutlinkParseFilter implements HtmlParseFilter {
       // Is the outlink not a descendant?
       if (toChk.indexOf(fromChk) != 0) {
         boolean isPdf = (toUrl.indexOf(".pdf") > 0) ? true : false;
-        // Handle the special case of PDFs from the same domain are allowed.
-        if (!(toDomain.equals(fromDomain) && isPdf)) { // not an allowed descendant link
-          return false;  // skip it
+        // Handle the special case of PDFs from allowed domains.
+        if (isPdf) {
+          // See if the PDF domain is an allowed domain.
+          for (String pdfDomain : allowedDomains) {
+            if (pdfDomain.equals(toDomain)) {
+              LOG.info("Accepting allowed PDF domain {}", toUrl);
+              return true;
+            } else if (pdfDomain.equals(toHost)) {
+              // Allow for CDN domains like bucket.s3.amazonaws.com
+              LOG.info("Accepting allowed PDF host {}", toUrl);
+              return true;
+            }
+          }
+          return false;
+        } else {
+          return false; // not an allowed descendant link, skip it.
         }
       }
     } catch (MalformedURLException mue) {
       return false;
     }
-    
+
     return true;
   }
 

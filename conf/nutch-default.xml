@@ -690,7 +690,7 @@
   <name>db.descendant.links</name>
   <value>false</value>
   <description>If true, outlinks leading from a page to another section on internal
-  hosts will be ignored. This is an effective way to limit the crawl to include
+  hosts will be included. This is an effective way to limit the crawl to include
   only website sections defined by initially injected seeds, without creating
   complex URLFilters.
 
