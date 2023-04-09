@@ -151,6 +151,9 @@ public class SuffixURLFilter implements URLFilter {
       _url = url;
     if (filterFromPath) {
       try {
+        if (_url.indexOf('\\') > 0) {
+          _url = _url.replace('\\', '/');
+        }
         URL pUrl = new URL(_url);
         _url = pUrl.getPath();
       } catch (MalformedURLException e) {

@@ -141,6 +141,12 @@ public class LinkDb extends NutchTool implements Tool {
 
         if (descendantLinks) {
           try {
+            if (fromUrl.indexOf('\\') > 0) {
+              fromUrl = fromUrl.replace('\\', '/');
+            }
+            if (toUrl.indexOf('\\') > 0) {
+              toUrl = toUrl.replace('\\', '/');
+            }
             String fromDomain = URLUtil.getDomainName(fromUrl).toLowerCase();
             String toDomain = URLUtil.getDomainName(toUrl).toLowerCase();
             String toHost = URLUtil.getHost(toUrl).toLowerCase();

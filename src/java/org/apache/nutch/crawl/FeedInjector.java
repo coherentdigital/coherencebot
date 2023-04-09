@@ -480,6 +480,18 @@ public class FeedInjector extends NutchTool implements Tool {
                     }
                   }
                 }
+                if (collection.has("allowed_hosts")) {
+                  JSONArray jaDomains = collection.getJSONArray("allowed_hosts");
+                  if (jaDomains.length() > 0) {
+                    for (int j = 0; j < jaDomains.length(); j++) {
+                      String domain = ja.getString(j);
+                      if (domains.length() > 0) {
+                        domains.append(";");
+                      }
+                      domains.append(domain);
+                    }
+                  }
+                }
                 collectionDomains = domains.toString();
                 if (seedUrl != null && collectionId != null
                     && collectionTitle != null && collectionOrgId != null

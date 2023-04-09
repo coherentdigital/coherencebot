@@ -67,6 +67,9 @@ public class PathURLFilter implements URLFilter {
   public String filter(String url) {
     try {
       if (url != null) {
+        if (url.indexOf('\\') > 0) {
+          url = url.replace('\\', '/');
+        }
         URI uri = new URI(url);
         String uriPath = uri.getPath();
         String[] paths = uriPath.split("/");

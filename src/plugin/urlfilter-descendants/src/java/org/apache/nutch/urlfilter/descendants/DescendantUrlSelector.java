@@ -70,6 +70,12 @@ public class DescendantUrlSelector implements URLExemptionFilter {
 
     if (requireDescendants) {
       try {
+        if (fromUrl.indexOf('\\') > 0) {
+          fromUrl = fromUrl.replace('\\', '/');
+        }
+        if (toUrl.indexOf('\\') > 0) {
+          toUrl = toUrl.replace('\\', '/');
+        }
         String fromDomain = URLUtil.getDomainName(fromUrl).toLowerCase();
         String toDomain = URLUtil.getDomainName(toUrl).toLowerCase();
         String fromPath = new URL(fromUrl).getPath().toLowerCase();

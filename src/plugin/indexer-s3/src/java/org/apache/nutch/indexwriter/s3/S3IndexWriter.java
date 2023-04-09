@@ -699,6 +699,9 @@ public class S3IndexWriter implements IndexWriter {
     String newUrlStr = toEscape;
 
     try {
+      if (toEscape.indexOf('\\') > 0) {
+        toEscape = toEscape.replace('\\', '/');
+      }
       URL url = new URL(toEscape);
       URI uri = new URI(url.getProtocol(), url.getUserInfo(), url.getHost(),
           url.getPort(), url.getPath(), url.getQuery(), url.getRef());

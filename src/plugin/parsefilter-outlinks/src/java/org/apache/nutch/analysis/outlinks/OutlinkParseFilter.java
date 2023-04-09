@@ -180,6 +180,12 @@ public class OutlinkParseFilter implements HtmlParseFilter {
    */
   protected boolean validateDescendant(String fromUrl, String toUrl, String allowedDomains[]) {
     try {
+      if (fromUrl.indexOf('\\') > 0) {
+        fromUrl = fromUrl.replace('\\', '/');
+      }
+      if (toUrl.indexOf('\\') > 0) {
+        toUrl = toUrl.replace('\\', '/');
+      }
       String fromDomain = URLUtil.getDomainName(fromUrl).toLowerCase();
       String toDomain = URLUtil.getDomainName(toUrl).toLowerCase();
       String fromHost = URLUtil.getHost(fromUrl).toLowerCase();
