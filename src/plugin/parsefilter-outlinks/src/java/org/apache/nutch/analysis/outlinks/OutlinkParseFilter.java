@@ -87,7 +87,7 @@ public class OutlinkParseFilter implements HtmlParseFilter {
       Outlink outlinks[] = parseData.getOutlinks();
       if (outlinks.length > 0) {
         List<Outlink> filteredOutlinks = new ArrayList<Outlink>();
-        LOG.info("Checking " + outlinks.length + " outlinks for descendants");
+        LOG.info("Checking " + outlinks.length + " outlinks for descendants of " + seedUrl);
         for (Outlink outlink : outlinks) {
           String toUrl = outlink.getToUrl();
           if (validateDescendant(seedUrl, toUrl, allowedDomains)) {

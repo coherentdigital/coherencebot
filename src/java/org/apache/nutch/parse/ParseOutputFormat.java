@@ -26,6 +26,7 @@ import org.apache.hadoop.io.MapWritable;
 import org.apache.hadoop.io.SequenceFile;
 import org.apache.hadoop.io.SequenceFile.CompressionType;
 import org.apache.hadoop.io.SequenceFile.Metadata;
+import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.compress.DefaultCodec;
 import org.apache.hadoop.util.Progressable;
@@ -57,6 +58,7 @@ import java.lang.invoke.MethodHandles;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map.Entry;
 
@@ -168,6 +170,9 @@ public class ParseOutputFormat extends OutputFormat<Text, Parse> {
     final boolean isParsing = conf.getBoolean("fetcher.parse", true);
     final CompressionType compType = SequenceFileOutputFormat
         .getOutputCompressionType(context);
+
+    final String[] urlMetaTags = conf.getStrings("urlmeta.tags");
+    final String DEPTH_KEY = "_depth_";
     Path out = FileOutputFormat.getOutputPath(context);
 
     Path text = new Path(new Path(out, ParseText.DIR_NAME), name);
@@ -284,6 +289,26 @@ public class ParseOutputFormat extends OutputFormat<Text, Parse> {
             if (reprUrl != null && !reprUrl.equals(newUrl)) {
               newDatum.getMetaData().put(Nutch.WRITABLE_REPR_URL_KEY,
                   new Text(reprUrl));
+              String depthValue = parse.getData().getParseMeta().get(DEPTH_KEY);
+              if (depthValue != null) {
+                Integer depthValueInt = Integer.parseInt(depthValue);
+                newDatum.getMetaData().put(new Text(DEPTH_KEY), new IntWritable(depthValueInt));
+              } else {
+                newDatum.getMetaData().put(new Text(DEPTH_KEY), new IntWritable(1));
+              }
+              // We carry any requested content meta to the newDatum
+              if (urlMetaTags != null && urlMetaTags.length > 0) {
+                List<String> metaNamesList = Arrays.asList(urlMetaTags);
+                String metaNames[] = parseData.getContentMeta().names();
+                for (String metaName : metaNames) {
+                  if (metaNamesList.contains(metaName)) {
+                    newDatum.getMetaData().put(
+                        new Text(metaName),
+                        new Text(parseData.getContentMeta().get(metaName))
+                    );
+                  }
+                }
+              }
             }
             crawlOut.append(new Text(newUrl), newDatum);
           }
