@@ -436,8 +436,8 @@ do
         then echo "Please set ES_PASSWORD to the elasticsearch password for the cbdashboard index.";
         exit 1
       fi
-      echo "Extracting fetch statistics from $SEGMENT"
-      __bin_nutch readseg -dump "$CRAWL_PATH"/segments/$SEGMENT ./analysis/readseg/fetch -nocontent -nogenerate -noparse -noparsedata -noparsetext -json
+      echo "Extracting fetched and unfetched statistics from $SEGMENT"
+      __bin_nutch readseg -dump "$CRAWL_PATH"/segments/$SEGMENT ./analysis/readseg/fetch -nocontent -noparse -noparsedata -noparsetext -json
 
       pushd ../local
       if [ $mode = "distributed" ]; then
