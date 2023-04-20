@@ -23,7 +23,9 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.hadoop.conf.Configured;
@@ -33,12 +35,15 @@ import org.apache.hadoop.io.WritableComparable;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
+import org.apache.http.Header;
+import org.apache.http.HttpHeaders;
 import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.CredentialsProvider;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
+import org.apache.http.message.BasicHeader;
 import org.apache.nutch.crawl.NutchWritable;
 import org.apache.nutch.util.NutchConfiguration;
 import org.slf4j.Logger;
@@ -320,7 +325,9 @@ public class StatsIndexer extends Configured implements Tool {
                 } catch (NoSuchAlgorithmException e) {
                   LOG.error(e.toString());
                 }
-                return httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider);
+                return httpClientBuilder
+                  .setDefaultCredentialsProvider(credentialsProvider)
+                  .setDefaultHeaders(compatibilityHeaders());
               }
             });
       }
@@ -331,6 +338,30 @@ public class StatsIndexer extends Configured implements Tool {
     }
 
     return client;
+  }
+
+  /**
+   * With the upgrade to OpenSearch 2.5 for the cbdashboard index
+   * There is an issue with posts to the index not accepting null values.
+   * This sets the RestClient to be compatible with version 7.
+   *
+   * @return Headers for the RestClient
+   */
+  private List<Header> compatibilityHeaders() {
+    List<Header> headers = new ArrayList<Header>();
+    headers.add(
+      new BasicHeader(
+        HttpHeaders.ACCEPT,
+        "application/vnd.elasticsearch+json;compatible-with=7"
+      )
+    );
+    headers.add(
+      new BasicHeader(
+        HttpHeaders.CONTENT_TYPE,
+        "application/vnd.elasticsearch+json;compatible-with=7"
+      )
+    );
+    return headers;
   }
 
   private static void usage() {
