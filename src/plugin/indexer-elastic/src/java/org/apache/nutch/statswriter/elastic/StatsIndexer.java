@@ -18,14 +18,10 @@ package org.apache.nutch.statswriter.elastic;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import javax.net.ssl.SSLContext;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.hadoop.conf.Configured;
@@ -35,38 +31,33 @@ import org.apache.hadoop.io.WritableComparable;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
-import org.apache.http.Header;
-import org.apache.http.HttpHeaders;
 import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
-import org.apache.http.client.CredentialsProvider;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
-import org.apache.http.message.BasicHeader;
 import org.apache.nutch.crawl.NutchWritable;
 import org.apache.nutch.util.NutchConfiguration;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.elasticsearch.action.bulk.BulkResponse;
-import org.elasticsearch.action.DocWriteRequest;
-import org.elasticsearch.action.bulk.BackoffPolicy;
-import org.elasticsearch.action.bulk.BulkProcessor;
-import org.elasticsearch.action.bulk.BulkRequest;
-import org.elasticsearch.action.index.IndexRequest;
-import org.elasticsearch.client.RestClient;
-import org.elasticsearch.client.RestClientBuilder;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.common.unit.ByteSizeUnit;
-import org.elasticsearch.common.unit.ByteSizeValue;
-import org.elasticsearch.common.unit.TimeValue;
-import org.elasticsearch.client.RestClientBuilder.HttpClientConfigCallback;
-import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.common.xcontent.XContentFactory;
-import org.elasticsearch.client.RequestOptions;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
+import org.opensearch.action.DocWriteRequest;
+import org.opensearch.action.bulk.BackoffPolicy;
+import org.opensearch.action.bulk.BulkProcessor;
+import org.opensearch.action.bulk.BulkRequest;
+import org.opensearch.action.bulk.BulkResponse;
+import org.opensearch.action.index.IndexRequest;
+import org.opensearch.client.RequestOptions;
+import org.opensearch.client.RestClient;
+import org.opensearch.client.RestClientBuilder;
+import org.opensearch.client.RestHighLevelClient;
+import org.opensearch.common.unit.ByteSizeUnit;
+import org.opensearch.common.unit.ByteSizeValue;
+import org.opensearch.common.unit.TimeValue;
+import org.opensearch.common.xcontent.XContentBuilder;
+import org.opensearch.common.xcontent.XContentFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Index runtime statistics to a dashboard. */
 public class StatsIndexer extends Configured implements Tool {
@@ -116,7 +107,6 @@ public class StatsIndexer extends Configured implements Tool {
     int records_indexed = 0;
     try {
       client = makeClient();
-
       LOG.debug("Creating BulkProcessor with maxBulkDocs={}, maxBulkLength={}",
           maxBulkDocs, maxBulkLength);
       bulkProcessor = BulkProcessor
@@ -129,6 +119,8 @@ public class StatsIndexer extends Configured implements Tool {
               TimeValue.timeValueMillis(expBackoffMillis), expBackoffRetries))
           .build();
 
+      LOG.debug("Creating BulkProcessor with maxBulkDocs={}, maxBulkLength={}",
+          maxBulkDocs, maxBulkLength);
       Path fileName = FileSystems.getDefault().getPath(".", input);
       String jsonStr = new String(Files.readAllBytes(fileName));
       JSONArray ja = new JSONArray(jsonStr);
@@ -180,6 +172,7 @@ public class StatsIndexer extends Configured implements Tool {
     };
   }
 
+
   protected void write(JSONObject jo) throws IOException, JSONException {
     String id = null;
     if (jo.has("id")) {
@@ -212,8 +205,7 @@ public class StatsIndexer extends Configured implements Tool {
     }
     builder.endObject();
 
-    IndexRequest request = new IndexRequest(index).id(id)
-        .source(builder);
+    IndexRequest request = new IndexRequest(index).id(id).source(builder);
     request.opType(DocWriteRequest.OpType.INDEX);
 
     bulkProcessor.add(request);
@@ -291,7 +283,7 @@ public class StatsIndexer extends Configured implements Tool {
 
   /**
    * Generates a RestHighLevelClient for the host
-   * @return an initialized {@link org.elasticsearch.client.RestHighLevelClient}
+   * @return an initialized {@link org.opensearch.client.RestHighLevelClient}
    * @throws IOException if there is an error reading the 
    * {@link org.apache.nutch.indexer.IndexWriterParams}
    */
@@ -303,65 +295,35 @@ public class StatsIndexer extends Configured implements Tool {
       auth = true;
     }
 
-    final CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
-    credentialsProvider.setCredentials(AuthScope.ANY,
-        new UsernamePasswordCredentials(username, password));
-
     client = null;
 
-    if (host != null && port > 1) {
-      HttpHost[] hostsList = new HttpHost[1];
-      HttpHost esHost = new HttpHost(host, 443, "https");
-      hostsList[0] = esHost;
-      RestClientBuilder restClientBuilder = RestClient.builder(hostsList);
-      if (auth) {
-        restClientBuilder
-            .setHttpClientConfigCallback(new HttpClientConfigCallback() {
-              @Override
-              public HttpAsyncClientBuilder customizeHttpClient(
-                  HttpAsyncClientBuilder httpClientBuilder) {
-                try {
-                  httpClientBuilder.setSSLContext(SSLContext.getDefault());
-                } catch (NoSuchAlgorithmException e) {
-                  LOG.error(e.toString());
+    if (host != null && port > 1 && auth) {
+      final HttpHost esHost = new HttpHost(host, 443, "https");
+      final BasicCredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+      credentialsProvider.setCredentials(
+        new AuthScope(esHost),
+        new UsernamePasswordCredentials(username, password)
+      );
+
+      //Initialize the client with SSL and TLS enabled
+      final RestClientBuilder restClientBuilder = RestClient.builder(esHost)
+          .setHttpClientConfigCallback(
+              new RestClientBuilder.HttpClientConfigCallback() {
+                @Override
+                public HttpAsyncClientBuilder customizeHttpClient(
+                    HttpAsyncClientBuilder httpClientBuilder) {
+                  return httpClientBuilder
+                      .setDefaultCredentialsProvider(credentialsProvider);
                 }
-                return httpClientBuilder
-                  .setDefaultCredentialsProvider(credentialsProvider)
-                  .setDefaultHeaders(compatibilityHeaders());
-              }
-            });
-      }
+              });
       client = new RestHighLevelClient(restClientBuilder);
+
     } else {
       throw new IOException(
-          "ElasticRestClient initialization Failed!!!\\n\\nPlease Provide the host");
+        "OpenSearch RestHighLevelClient initialization Failed!!!\\n\\nPlease Provide the host, username and password"
+      );
     }
-
     return client;
-  }
-
-  /**
-   * With the upgrade to OpenSearch 2.5 for the cbdashboard index
-   * There is an issue with posts to the index not accepting null values.
-   * This sets the RestClient to be compatible with version 7.
-   *
-   * @return Headers for the RestClient
-   */
-  private List<Header> compatibilityHeaders() {
-    List<Header> headers = new ArrayList<Header>();
-    headers.add(
-      new BasicHeader(
-        HttpHeaders.ACCEPT,
-        "application/vnd.elasticsearch+json;compatible-with=7"
-      )
-    );
-    headers.add(
-      new BasicHeader(
-        HttpHeaders.CONTENT_TYPE,
-        "application/vnd.elasticsearch+json;compatible-with=7"
-      )
-    );
-    return headers;
   }
 
   private static void usage() {
