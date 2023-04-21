@@ -317,7 +317,6 @@ public class StatsIndexer extends Configured implements Tool {
                 }
               });
       client = new RestHighLevelClient(restClientBuilder);
-
     } else {
       throw new IOException(
         "OpenSearch RestHighLevelClient initialization Failed!!!\\n\\nPlease Provide the host, username and password"
