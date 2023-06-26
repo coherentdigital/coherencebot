@@ -138,7 +138,6 @@ public class FormatCrawlStats extends Configured implements Tool {
           String host = cc.getString("host");
           JSONObject hostMeta = hostsMeta.get(host);
           if (hostMeta == null) {
-            LOG.warn("No collection info in seeds.txt for host {}", host);
             // The nutch database is reporting data for a host not in the seed list.
             // These are typically allowed_hosts other than the seed.
             // Make a dashboard record with unknown or mapped values for the collection meta.
@@ -154,6 +153,7 @@ public class FormatCrawlStats extends Configured implements Tool {
               hostMeta.put("org_slug", allowedHostMeta.get("org_slug"));
               hostMeta.put("org_domains", allowedHostMeta.get("org_domains"));
             } else {
+              LOG.warn("No collection info in seeds.txt for host {}", host);
               hostMeta.put("collection_ids", unknown);
               hostMeta.put("collection_titles", unknown);
               hostMeta.put("collection_seeds", unknown);

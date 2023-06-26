@@ -278,7 +278,8 @@ function __bin_nutch {
         echo "Error running:"
         echo "  $bin/nutch $@"
         echo "Failed with exit value $RETCODE."
-        exit $RETCODE
+        # To preserve the loop, we keep running despite error
+        # exit $RETCODE
     fi
 }
 
