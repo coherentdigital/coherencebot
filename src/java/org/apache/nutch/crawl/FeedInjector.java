@@ -459,12 +459,6 @@ public class FeedInjector extends NutchTool implements Tool {
                   collectionTitle = collection.getString("title");
                 }
                 StringBuffer domains = new StringBuffer();
-                // Add the domain of the seed to the list of domains
-                try {
-                  domains.append(URLUtil.getDomainName(seedUrl).toLowerCase());
-                } catch (MalformedURLException mue) {
-                  LOG.error("Malformed URL for {}. Ignoring", seedUrl);
-                }
                 if (collection.has("org")) {
                   JSONObject org = collection.getJSONObject("org");
                   if (org.has("slug")) {
