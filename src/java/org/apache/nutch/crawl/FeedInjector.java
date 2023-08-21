@@ -475,7 +475,7 @@ public class FeedInjector extends NutchTool implements Tool {
                     JSONArray jaDomains = org.getJSONArray("domains");
                     if (jaDomains.length() > 0) {
                       for (int j = 0; j < jaDomains.length(); j++) {
-                        String domain = ja.getString(j);
+                        String domain = jaDomains.getString(j);
                         if (domains.length() > 0) {
                           domains.append(";");
                         }
@@ -488,7 +488,7 @@ public class FeedInjector extends NutchTool implements Tool {
                   JSONArray jaDomains = collection.getJSONArray("allowed_hosts");
                   if (jaDomains.length() > 0) {
                     for (int j = 0; j < jaDomains.length(); j++) {
-                      String domain = ja.getString(j);
+                      String domain = jaDomains.getString(j);
                       if (domains.length() > 0) {
                         domains.append(";");
                       }
