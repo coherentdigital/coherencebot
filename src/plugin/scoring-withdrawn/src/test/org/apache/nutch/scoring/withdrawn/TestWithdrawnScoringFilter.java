@@ -17,6 +17,7 @@
 package org.apache.nutch.scoring.withdrawn;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -55,7 +56,8 @@ public class TestWithdrawnScoringFilter {
     Path tempFile = Files.createTempFile(null, null);
 
     // Writes a string to the above temporary file
-    Files.write(tempFile, "https://example.com\tcollection.seed=https://example.com\n".getBytes(StandardCharsets.UTF_8));
+    String seedData = "https://example.com\tcollection.title=Publications\tcollection.id=4a6a43cd-fcf4-47f1-b989-8136c39a6abd\tcollection.seed=https://example.com\torg.slug=example-us\torg.domains=example.com\n";
+    Files.write(tempFile, seedData.getBytes(StandardCharsets.UTF_8));
 
     conf.set(FeedInjector.FEED_INJECTOR_CRAWLPATH, tempFile.toAbsolutePath().toString());
     conf.setBoolean(CrawlDb.CRAWLDB_PURGE_WITHDRAWN, true);
@@ -72,6 +74,7 @@ public class TestWithdrawnScoringFilter {
     filter.setConf(conf);
 
     Text url = new Text("http://example.com/home");
+    CrawlDatum old = null;
     CrawlDatum datum = new CrawlDatum();
     datum.setStatus(CrawlDatum.STATUS_DB_NOTMODIFIED);
     // Set the collection seed of this datum to match the config file.
@@ -81,7 +84,7 @@ public class TestWithdrawnScoringFilter {
     List<CrawlDatum> emptyListOfInlinks = new ArrayList<CrawlDatum>();
 
     // This URL should not be marked withdrawn
-    filter.updateDbScore(url, datum, datum, emptyListOfInlinks);
+    filter.updateDbScore(url, old, datum, emptyListOfInlinks);
 
     assertEquals(
         "Expected status db_notmodified but got "
@@ -91,7 +94,7 @@ public class TestWithdrawnScoringFilter {
 
   @Test
   /**
-   * This test creates a crawl dataum with a collection.seed metadata
+   * This test creates a crawl datum with a collection.seed metadata
    * element.  In this test the crawl datum is marked withdrawn
    * @throws Exception
    */
@@ -100,6 +103,7 @@ public class TestWithdrawnScoringFilter {
     filter.setConf(conf);
 
     Text url = new Text("http://www.example.com/home");
+    CrawlDatum old = null;
     CrawlDatum datum = new CrawlDatum();
     datum.setStatus(CrawlDatum.STATUS_DB_NOTMODIFIED);
     // Set the collection seed of this datum to not match the config file.
@@ -109,11 +113,54 @@ public class TestWithdrawnScoringFilter {
     List<CrawlDatum> emptyListOfInlinks = new ArrayList<CrawlDatum>();
 
     // This URL should be marked withdrawn
-    filter.updateDbScore(url, datum, datum, emptyListOfInlinks);
+    filter.updateDbScore(url, old, datum, emptyListOfInlinks);
 
     assertEquals(
         "Expected status db_withdrawn but got "
             + CrawlDatum.getStatusName(datum.getStatus()),
         CrawlDatum.STATUS_DB_WITHDRAWN, datum.getStatus());
+  }
+
+  @Test
+  /**
+   * This test creates a crawl datum with new collection metadata.
+   * It is not withdrawn.
+   * @throws Exception
+   */
+  public void testAlteredCrawlDatum() throws Exception {
+    ScoringFilter filter = new WithdrawnScoringFilter();
+    filter.setConf(conf);
+
+    Text url = new Text("http://example.com/home");
+    CrawlDatum old = null;
+    CrawlDatum datum = new CrawlDatum();
+    datum.setStatus(CrawlDatum.STATUS_DB_NOTMODIFIED);
+    // Set the collection seed of this datum to match the config file.
+    MapWritable metadata = datum.getMetaData();
+    metadata.put(SEED_KEY_W, new Text("https://example.com"));
+
+    List<CrawlDatum> emptyListOfInlinks = new ArrayList<CrawlDatum>();
+
+    // This URL should not be marked withdrawn
+    filter.updateDbScore(url, old, datum, emptyListOfInlinks);
+
+    assertEquals(
+        "Expected status db_notmodified but got "
+            + CrawlDatum.getStatusName(datum.getStatus()),
+        CrawlDatum.STATUS_DB_NOTMODIFIED, datum.getStatus());
+
+    MapWritable newMetadata = datum.getMetaData();
+    assertTrue(
+        "Expected new data to contain key collection.title",
+        newMetadata.containsKey(new Text("collection.title")));
+    assertTrue(
+        "Expected new data to contain key collection.id",
+        newMetadata.containsKey(new Text("collection.id")));
+    assertTrue(
+        "Expected new data to contain key org.slug",
+        newMetadata.containsKey(new Text("org.slug")));
+    assertTrue(
+        "Expected new data to contain key org.domains",
+        newMetadata.containsKey(new Text("org.domains")));
   }
 }

@@ -20,14 +20,15 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.invoke.MethodHandles;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.UnsupportedFileSystemException;
+import org.apache.hadoop.io.MapWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.nutch.crawl.CrawlDatum;
 import org.apache.nutch.crawl.FeedInjector;
@@ -42,6 +43,9 @@ import org.slf4j.LoggerFactory;
  * is no longer present in the list of seeds this bot is responsible for.
  * If the seed for a page isn't in the feed,
  * the page is marked for removal from the CrawlDB.
+ *
+ * This filter is also used to update a page's collection metadata
+ * if the collection data has changed since the page was initially discovered.
  */
 public class WithdrawnScoringFilter extends AbstractScoringFilter {
   private static final Logger LOG = LoggerFactory
@@ -49,7 +53,8 @@ public class WithdrawnScoringFilter extends AbstractScoringFilter {
 
   public static final String SEED_KEY = "collection.seed";
   public static final Text SEED_KEY_W = new Text(SEED_KEY);
-  private static Set<String> SEEDS = new HashSet<String>();
+  // A Map of the seed URLs and the seed metadata from the Collection API
+  private static Map<String, MapWritable> SEEDS = new HashMap<String, MapWritable>();
   public static final String TAB_CHARACTER = "\t";
   public static final String EQUAL_CHARACTER = "=";
 
@@ -90,7 +95,8 @@ public class WithdrawnScoringFilter extends AbstractScoringFilter {
             continue;
           default:
             String[] splits = line.split(TAB_CHARACTER);
-
+            MapWritable metaData = new MapWritable();
+            String seedUrl = null;
             for (String split : splits) {
               // find separation between name and value
               int indexEquals = split.indexOf(EQUAL_CHARACTER);
@@ -100,10 +106,13 @@ public class WithdrawnScoringFilter extends AbstractScoringFilter {
               String metaname = split.substring(0, indexEquals);
               String metavalue = split.substring(indexEquals + 1);
 
+              metaData.put(new Text(metaname), new Text(metavalue));
+
               if (metaname.equals("collection.seed")) {
-                SEEDS.add(metavalue);
+                seedUrl = metavalue;
               }
             }
+            SEEDS.put(seedUrl, metaData);
           }
         }
       } catch (IOException e) {
@@ -125,7 +134,14 @@ public class WithdrawnScoringFilter extends AbstractScoringFilter {
   }
 
   /**
-   * Used for withdrawn status update.
+   * Used for withdrawn status and Collection metadata updates on URLs
+   * in the CrawlDB.
+   *
+   * In this application of the filter we only care about the
+   * 'datum' (arg 3). This is the datum that is going to be persisted.
+   * Any old datum is only useful in a scoring update. For CoherenceBot
+   * (which is not scoring based on inlinks) any old datum is basically
+   * irrelevant.
    *
    * @param url
    *          of the record
@@ -141,14 +157,18 @@ public class WithdrawnScoringFilter extends AbstractScoringFilter {
 
     // Do we have a list of seeds?
     if (SEEDS.size() > 0) {
-      // Are we responsible for the seed in this record?
-      if (old != null) {
-        Text oldSeed = (Text) old.getMetaData().get(SEED_KEY_W);
-        if (oldSeed != null) {
-          String oldSeedStr = oldSeed.toString();
-          if (!SEEDS.contains(oldSeedStr)) {
+      // Is CoherenceBot currently responsible for the seed in this record?
+      if (datum != null) {
+        Text datumSeed = (Text) datum.getMetaData().get(SEED_KEY_W);
+        if (datumSeed != null) {
+          String datumSeedStr = datumSeed.toString();
+          if (!SEEDS.containsKey(datumSeedStr)) {
             datum.setStatus(CrawlDatum.STATUS_DB_WITHDRAWN);
-            LOG.info("Withdrawing URL {}, seed {} not in service", url.toString(), oldSeedStr);
+            LOG.info("Withdrawing URL {}, seed {} not in service", url.toString(), datumSeedStr);
+          } else {
+            // Update the new datum with the current Collection API-provided metadata.
+            MapWritable seedMetadata = SEEDS.get(datumSeedStr);
+            datum.getMetaData().putAll(seedMetadata);
           }
         }
       }
